@@ -1,0 +1,102 @@
+* {
+    margin: 0;
+    padding: 0;
+    font-family: 思源黑体, 微软雅黑;
+}
+
+body {
+    background: #000000;
+}
+
+#frame {
+    position: relative;
+    margin: auto;
+    overflow: hidden;
+    width: 1280px;
+    height: 720px;
+    background: #000000;
+}
+
+#frame-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: center no-repeat;
+    background-size: cover;
+    filter: blur(4px);
+    transition: all 0.5s;
+}
+
+#frame-text {
+    position: absolute;
+    z-index: 100;
+    bottom: 20px;
+    left: 20px;
+    padding: 40px;
+    width: calc(100% - 40px - 80px);
+    height: calc(30% - 80px);
+    border-radius: 15px;
+    background: rgba(255, 255, 255, .8);
+    color: #333333;
+    font-size: 36px;
+}
+
+#text-speaker {
+    display: none;
+    position: absolute;
+    z-index: 200;
+    top: -35px;
+    left: 50px;
+    padding: 10px 20px;
+    border-radius: 15px;
+    background: rgba(255, 237, 237);
+}
+
+#text-body {
+    font-size: 26px;
+}
+
+#frame-functions {
+    position: absolute;
+    z-index: 200;
+    bottom: 40px;
+    right: 60px;
+}
+
+#frame-functions * {
+    float: left;
+    padding: 10px 15px;
+    transition: all 0.5s;
+    color: #00000044;
+    text-decoration: none;
+}
+
+#frame-functions *:hover {
+    color: #333333;
+}
+
+#frame-role-l {
+    position: absolute;
+    bottom: -500px;
+    left: -350px;
+    width: 1400px;
+    height: 1400px;
+    background: center no-repeat;
+    background-size: contain;
+}
+
+#frame-role-r {
+    position: absolute;
+    bottom: -500px;
+    right: -350px;
+    width: 1400px;
+    height: 1400px;
+    background: center no-repeat;
+    background-size: contain;
+}
+
+.unspeaking {
+    filter: brightness(33%);
+}
