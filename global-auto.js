@@ -1,19 +1,37 @@
+/** 剧本 */
+var frameScript = "data/chapter-test-1.json";
+/** 下一剧本 */
+var nextFrameScript = "data/chapter-test-1.json";
+/** 剧本帧 */
 var frameCode = 0;
+/** #frame-text隐藏状态 */
 var isTextHidden = false;
+/** #text-logs隐藏状态 */
+var isLogsHidden = true;
+/** 分支选择状态 */
+var isChoosing = false;
+/** 字幕滚动状态 */
+var isRolling = false;
+/** 字幕滚动线程ID */
+var rtid;
+/** 正在滚动的字幕 */
+var stNow;
+/** 单帧计时器 */
+var fts;
 
 window.onload = window.onresize = function () {
-    const W_UNIT = window.innerWidth / 16.0;
-    const H_UNIT = window.innerHeight / 9.0;
-    document.getElementById("frame").style.cssText =
-        "zoom: " + (W_UNIT > H_UNIT ? H_UNIT / 720.0 * 9 : W_UNIT / 1280.0 * 16) + ";";
+    reFit();
 }
 
-document.documentElement.onkeydown = function (event) {
+document.onkeydown = function (event) {
+    event.target.blur();
+    if (!isLogsHidden || isChoosing)
+        return;
     if (!isTextHidden)
-        if (event.code == "Space")
-            flashFrame("data/chapter-test.json");
-    if (event.code == "Enter") {
-        var text = document.getElementById("frame-text");
+        if (event.code == "Enter")
+            preFlashFrame();
+    if (event.code == "Space") {
+        var text = e("#frame-text");
         if (isTextHidden)
             stylify(text, "display: block");
         else
@@ -22,22 +40,37 @@ document.documentElement.onkeydown = function (event) {
     }
 }
 
-document.getElementById("frame-text").onclick = function () {
-    flashFrame("data/chapter-test.json");
+e("#text-go").onclick = function () {
+    preFlashFrame();
 }
 
-document.getElementById("functions-load").onclick = function () {
-
+e("#functions-load").onclick = function () {
+    if (localStorage.getItem("frame-script") == null ||
+        localStorage.getItem("frame-code") == null)
+        return;
+    frameScript = localStorage.getItem("frame-script");
+    frameCode = 0;
+    e("#text-logs").innerText = "";
+    while (frameCode <= localStorage.getItem("frame-code")) {
+        clearInterval(rtid);
+        flashFrame();
+    }
 }
 
-document.getElementById("functions-save").onclick = function () {
-
+e("#functions-save").onclick = function () {
+    localStorage.setItem("frame-script", frameScript);
+    localStorage.setItem("frame-code", frameCode - 1);
 }
 
-document.getElementById("functions-logs").onclick = function () {
-
+e("#functions-logs").onclick = function () {
+    var logs = e("#text-logs");
+    if (isLogsHidden)
+        stylify(logs, "display: block;");
+    else
+        stylify(logs, "display: none;");
+    isLogsHidden = isLogsHidden ? false : true;
 }
 
-document.getElementById("functions-settings").onclick = function () {
+e("#functions-settings").onclick = function () {
 
 }

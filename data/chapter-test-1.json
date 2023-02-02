@@ -1,0 +1,66 @@
+{
+    "frame": [
+        {
+            "type": "normal",
+            "bg": {
+                "pic": "https://img.zcool.cn/community/013f815b1bbbfea80121bbec021427.jpg@1280w_1l_2o_100sh.jpg",
+                "music": null,
+                "effect": null
+            },
+            "roleL": {
+                "pic": "https://umamusume.jp/app/wp-content/uploads/2021/01/18ba01c0c00b4f5e2c246e1b80aa13ff.png",
+                "vocal": "",
+                "effect": null
+            },
+            "roleR": {
+                "pic": "https://umamusume.jp/app/wp-content/uploads/2021/01/900065cbe5ecb091cd2911d68d866a31.png",
+                "vocal": null,
+                "effect": null
+            },
+            "text": {
+                "speaker": "东海帝王",
+                "body": "这里显示一段很长的文本，还不让你跳过。因此你感到时间流逝的太慢了......"
+            },
+            "soundEffect": null,
+            "isFinalFrame": false
+        },
+        {
+            "type": "normal",
+            "bg": {
+                "pic": null,
+                "music": null,
+                "effect": null
+            },
+            "roleL": {
+                "pic": null,
+                "vocal": null,
+                "effect": null
+            },
+            "roleR": {
+                "pic": null,
+                "vocal": "",
+                "effect": null
+            },
+            "text": {
+                "speaker": "鲁道夫象征",
+                "body": "你要是跟O比恶心是吧"
+            },
+            "soundEffect": null,
+            "isFinalFrame": false
+        },
+        {
+            "type": "choicer",
+            "choices": [
+                {
+                    "name": "看看更恶心的",
+                    "operation": "nextFrameScript = 'data/chapter-test-2.json';"
+                },
+                {
+                    "name": "算了算了",
+                    "operation": ""
+                }
+            ],
+            "isFinalFrame": true
+        }
+    ]
+}

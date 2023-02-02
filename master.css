@@ -1,7 +1,12 @@
 * {
     margin: 0;
     padding: 0;
+    color: #ffffff;
     font-family: 思源黑体, 微软雅黑;
+}
+
+*::selection {
+    background: transparent;
 }
 
 body {
@@ -17,68 +22,22 @@ body {
     background: #000000;
 }
 
-#frame-bg {
+#graphic-bg {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    z-index: 100;
+    top: -3%;
+    left: -3%;
+    width: 106%;
+    height: 106%;
     background: center no-repeat;
     background-size: cover;
     filter: blur(4px);
     transition: all 0.5s;
 }
 
-#frame-text {
+#graphic-role-l {
     position: absolute;
-    z-index: 100;
-    bottom: 20px;
-    left: 20px;
-    padding: 40px;
-    width: calc(100% - 40px - 80px);
-    height: calc(30% - 80px);
-    border-radius: 15px;
-    background: rgba(255, 255, 255, .8);
-    color: #333333;
-    font-size: 36px;
-}
-
-#text-speaker {
-    display: none;
-    position: absolute;
-    z-index: 200;
-    top: -35px;
-    left: 50px;
-    padding: 10px 20px;
-    border-radius: 15px;
-    background: rgba(255, 237, 237);
-}
-
-#text-body {
-    font-size: 26px;
-}
-
-#frame-functions {
-    position: absolute;
-    z-index: 200;
-    bottom: 40px;
-    right: 60px;
-}
-
-#frame-functions * {
-    float: left;
-    padding: 10px 15px;
-    transition: all 0.5s;
-    color: #00000044;
-    text-decoration: none;
-}
-
-#frame-functions *:hover {
-    color: #333333;
-}
-
-#frame-role-l {
-    position: absolute;
+    z-index: 110;
     bottom: -500px;
     left: -350px;
     width: 1400px;
@@ -87,8 +46,9 @@ body {
     background-size: contain;
 }
 
-#frame-role-r {
+#graphic-role-r {
     position: absolute;
+    z-index: 110;
     bottom: -500px;
     right: -350px;
     width: 1400px;
@@ -99,4 +59,178 @@ body {
 
 .unspeaking {
     filter: brightness(33%);
+}
+
+#frame-text {
+    --stroke: #3b0000;
+}
+
+#text-speaker {
+    display: none;
+    position: absolute;
+    z-index: 210;
+    bottom: 155px;
+    left: 266px;
+    border-radius: 15px;
+    color: #ffae00;
+    font-size: 30px;
+    font-weight: bold;
+    -webkit-text-stroke: 1.25px var(--stroke);
+    text-shadow:
+        1.4px 1.40px 0 var(--stroke),
+        1.5px 1.45px 0 var(--stroke),
+        1.6px 1.50px 0 var(--stroke);
+}
+
+#text-speaker::before {
+    content: "🔊";
+    position: absolute;
+    left: -55px;
+}
+
+#text-body {
+    position: absolute;
+    z-index: 200;
+    bottom: 0;
+    left: 0;
+    padding: 125px 266px 0;
+    width: 748px;
+    height: 140px;
+    background: linear-gradient(to bottom, transparent 30%, #ffffff66);
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: bold;
+    -webkit-text-stroke: 1.15px var(--stroke);
+    text-shadow:
+        1.3px 1.30px 0 var(--stroke),
+        1.4px 1.38px 0 var(--stroke),
+        1.5px 1.46px 0 var(--stroke);
+}
+
+@keyframes shining {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+#text-body::after {
+    content: " ●";
+    animation: shining 1.8s infinite;
+}
+
+#text-functions {
+    position: absolute;
+    z-index: 210;
+    bottom: 30px;
+    right: 45px;
+}
+
+#text-functions * {
+    float: left;
+    padding: 10px 15px;
+    transition: all 1s;
+    color: #00000044;
+    text-decoration: none;
+}
+
+#text-functions *:hover {
+    color: #333333;
+}
+
+#text-functions *:active {
+    transition: all 0s;
+    color: #cc0000;
+}
+
+#text-go {
+    position: absolute;
+    z-index: 220;
+    top: 80px;
+    left: 0;
+    width: 1280px;
+    height: 540px;
+}
+
+#text-logs {
+    position: absolute;
+    z-index: 230;
+    top: 80px;
+    left: 0;
+    overflow-y: auto;
+    padding: 60px 300px;
+    width: 680px;
+    height: 420px;
+    background: #000000cc;
+    display: none;
+    color: #ffffff;
+    font-size: 26px;
+    line-height: 48px;
+}
+
+#text-logs::-webkit-scrollbar {
+    width: 10px;
+}
+
+#text-logs::-webkit-scrollbar-thumb {
+    background: #222222;
+}
+
+#frame-choicer {
+    --count: 2;
+
+    display: none;
+    position: absolute;
+    z-index: 300;
+    width: 50%;
+    height: 100%;
+    padding: calc((720px - 150px * var(--count) + 90px) / 2) 25%;
+}
+
+.choice {
+    margin-bottom: 90px;
+    height: 60px;
+    background: darkred;
+    border: 0.6px solid #f8f8f8;
+    text-align: center;
+    line-height: 60px;
+    font-size: 23px;
+}
+
+.choice:hover {
+    filter: brightness(90%);
+}
+
+@keyframes selected {
+    from {
+        background: #ffffff;
+        color: #000000;
+    }
+
+    75% {
+        background: #111111;
+        color: #ffffff;
+    }
+
+    to {
+        background: #111111;
+        color: #ffffff;
+    }
+}
+
+.choice:active,
+.chosen,
+.chosen:hover {
+    filter: brightness(100%);
+    background: #ffffff;
+    transition: none;
+    animation: selected 3.5s;
+    color: #000000;
 }
