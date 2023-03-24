@@ -1,7 +1,7 @@
 {
     "frame": [
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": "https://ts1.cn.mm.bing.net/th/id/R-C.7d6fede2736790d8d489752c0962c632?rik=O6iSjvWQru094A&riu=http%3a%2f%2fimg.pconline.com.cn%2fimages%2fupload%2fupc%2ftx%2fphotoblog%2f1305%2f08%2fc10%2f20691738_20691738_1368019315109.jpg&ehk=VKQHKGmA7O8AVwJpgF09Cg56uH2cyTUIsnCbFGB1GBU%3d&risl=&pid=ImgRaw&r=0",
                 "music": null,
@@ -25,7 +25,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -49,7 +49,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -73,7 +73,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -97,7 +97,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -121,7 +121,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -145,7 +145,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -169,7 +169,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,

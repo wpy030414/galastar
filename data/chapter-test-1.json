@@ -1,7 +1,7 @@
 {
     "frame": [
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": "https://img.zcool.cn/community/013f815b1bbbfea80121bbec021427.jpg@1280w_1l_2o_100sh.jpg",
                 "music": null,
@@ -25,7 +25,7 @@
             "isFinalFrame": false
         },
         {
-            "type": "normal",
+            "type": "std",
             "bg": {
                 "pic": null,
                 "music": null,
@@ -49,11 +49,11 @@
             "isFinalFrame": false
         },
         {
-            "type": "choicer",
-            "choices": [
+            "type": "slt",
+            "options": [
                 {
                     "name": "看看更恶心的",
-                    "operation": "nextFrameScript = 'data/chapter-test-2.json';"
+                    "operation": "nextFrameScript = 'data/chapter-test-2.json'"
                 },
                 {
                     "name": "算了算了",

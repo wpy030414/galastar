@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帧描述生成器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="operation">
+        <h1>帧信息</h1>
+        <form>
+            <div>
+                <span>类型</span>
+                <span>
+                    <input type="radio" name="f-type" value="std" id="f-type-std" checked>
+                    <label for="f-type-std">标准帧</label>
+                    <input type="radio" name="f-type" value="slt" id="f-type-slt">
+                    <label for="f-type-slt">分支选择帧</label>
+                </span>
+                <span class="std">背景</span>
+                <span class="std">
+                    <label>图片：</label>
+                    <input type="file" id="f-bgi"><br>
+                    <label>音乐：</label>
+                    <input type="file" id="f-bgm"><br>
+                    <label>效果：</label>
+                    <input type="text" placeholder="直接的cssText，下同" id="f-bge">
+                </span>
+                <span class="std">左侧人物</span>
+                <span class="std">
+                    <label>图片：</label>
+                    <input type="file" id="f-role-l-p"><br>
+                    <label>语音：</label>
+                    <input type="file" id="f-role-l-v"><br>
+                    <label>效果：</label>
+                    <input type="text" id="f-role-l-e">
+                </span>
+                <span class="std">右侧人物</span>
+                <span class="std">
+                    <label>图片：</label>
+                    <input type="file" id="f-role-r-p"><br>
+                    <label>语音：</label>
+                    <input type="file" id="f-role-r-v"><br>
+                    <label>效果：</label>
+                    <input type="text" id="f-role-r-e">
+                </span>
+                <span class="std">文本</span>
+                <span class="std">
+                    <label>说话者：</label>
+                    <input type="text" id="f-text-spaeker"><br>
+                    <label>内容：</label><br>
+                    <textarea id="f-text-body"></textarea>
+                </span>
+                <span class="std">环境声效</span>
+                <span class="std">
+                    <input type="file" id="f-se">
+                </span>
+                <span class="slt">可选项</span>
+                <span class="slt">
+                    <label>选项：</label>
+                    <input type="text" placeholder="为空时表示不存在该选项" class="name">
+                    <label>操作：</label>
+                    <input type="text" placeholder="直接的JS代码，下同" class="operation"><br>
+                    <label>选项：</label>
+                    <input type="text" class="name">
+                    <label>操作：</label>
+                    <input type="text" class="operation"><br>
+                    <label>选项：</label>
+                    <input type="text" class="name">
+                    <label>操作：</label>
+                    <input type="text" class="operation"><br>
+                </span>
+                <span>最终帧</span>
+                <span>
+                    <input type="checkbox" id="f-iff">
+                    <label>是</label>
+                </span>
+            </div>
+            <p>未填写的项目一律被视为不对上一帧造成的影响更改，而不是抹除！</p>
+            <input type="reset" value="重置">
+            <input type="button" value="生成帧描述" id="gene">
+        </form>
+        <h1>生成结果</h1>
+        <textarea id="result" placeholder="此处展示指定信息所对应的帧描述字符串。" readonly></textarea>
+    </div>
+    <div id="note">
+        <p>Copyright (c) Penyo. All rights reserved.</p>
+        <p>本工具专供于PGF及其周边项目组开发用，禁止向外传播！</p>
+    </div>
+</body>
+
+<script src="dev.js"></script>
+
+</html>

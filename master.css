@@ -1,8 +1,9 @@
 * {
     margin: 0;
     padding: 0;
+    user-select: none;
     color: #ffffff;
-    font-family: 思源黑体, 微软雅黑;
+    font-family: 思源黑体;
 }
 
 *::selection {
@@ -183,7 +184,7 @@ body {
     background: #222222;
 }
 
-#frame-choicer {
+#frame-selector {
     --count: 2;
 
     display: none;
@@ -194,7 +195,7 @@ body {
     padding: calc((720px - 150px * var(--count) + 90px) / 2) 25%;
 }
 
-.choice {
+.option {
     margin-bottom: 90px;
     height: 60px;
     background: darkred;
@@ -204,7 +205,7 @@ body {
     font-size: 23px;
 }
 
-.choice:hover {
+.option:hover {
     filter: brightness(90%);
 }
 
@@ -225,9 +226,9 @@ body {
     }
 }
 
-.choice:active,
-.chosen,
-.chosen:hover {
+.option:active,
+.selected,
+.selected:hover {
     filter: brightness(100%);
     background: #ffffff;
     transition: none;

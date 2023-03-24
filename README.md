@@ -1,32 +1,30 @@
-# Welcome to Use PGF
+# 欢迎使用 PGF
 
-> 看不懂英语？去阅读[简体中文版本](README-zh_CN.md)。
+**PGF**（Penyo Gal Framework）提供了一种基于 Web 的朴素办法，显示文字、图片，并在同一界面播放音频，业界中常称其为 GalGame。这也是我们打算入手的第一类 Video Game，因为技术上实现较为简单。
+与市面上普遍的 GalGame 相比，本项目计划具备较为完善的数据管理机制、交互机制。初期预备设计开始界面、游戏界面、设置界面、背景介绍界面四大分支。
+**Penyo 对 PGF 全部内容保有权利**：没有引用任何商业或强制开源许可项目，且 PGF 并不打算在短期内开源。基于 PGF 创作的艺术型项目，版权总是属于 Penyo，除非额外书面商议。您一旦使用了 PGF 就视为您同意这一切。
 
-**PGF** (Penyo Gal Framework) provides a completely web-based simple way to display text and pictures on the same screen, often called GalGame in the industry. This is also the first type of video game we intend to start with, because the technical implementation is relatively simple.
-Compared with GalGame on the market, this project plans to have a relatively complete data management mechanism and interaction mechanism. The initial preparation design of four branches: the start interface, the game interface, the setting interface, and the background introduction interface.
-**Penyo retains rights to all contents of PGF**: it does not cite any commercial or mandatory open source licensing projects, and PGF does not intend to open source anytime soon. For artistic projects based on PGF, copyright always belongs to Penyo unless otherwise agreed upon in writing. By using PGF, you agree to all this.
+## 数据管理标准
 
-## PGF Data Management Standards
+为了规范化数据和媒体文件，您需要了解数据的管理标准。
 
-In order to normalize data and media files, you need to understand the standards for managing your data.
+### 剧本标准
 
-### Script Standards
+剧本统一存放在*data*文件夹中。
 
-The scripts are stored in the *data* folder.
-
-If the script is unbranched, its name should be something like `chapter-chapter-act.json`. For example, *Chapter IV, Act I*:
+若剧本是无分支的，其名称应当类似于 `chapter-章数-幕数.json`。如*第四章第一幕*：
 
 ```text
 chapter-4-1.json
 ```
 
-If the script has branches, each branch of the script should appear as a separate file, with a name similar to `chapter-chapter-acting+branch.json`. For example, *Chapter IV, Act II, Branch I*:
+若剧本有分支，则剧本的每一个分支都应该作为独立文件出现，其名称应当类似于 `chapter-章数-幕数+分支代号.json`。如*第四章第二幕第一分支*：
 
 ```text
 chapter-4-2a.json
 ```
 
-In branches, the repeating parts of the script only need to be treated as an unbranched script, and the branched script only needs to contain its proprietary content. If *Chapter IV, Act III* starts without branches, and only later two branches appear, then there should be three files:
+多分支中，剧本重复的部分只需要视为一个无分支的剧本，分支剧本中只需要包含其专有的内容。如*第四章第三幕*一开始是没有分支的，后来才出现了两个分支，那么就应该有三个文件存在：
 
 ```text
 chapter-4-3.json
@@ -34,13 +32,13 @@ chapter-4-3a.json
 chapter-4-3b.json
 ```
 
-### Frame Standard
+### 帧标准
 
-The basic unit of a script file is a **frame**, and there are two types: **normal frame** and **branch selection frame**. They are constructed as follows:
+剧本文件的基本单位是**帧**，有**标准帧**和**分支选择帧**两种。它们的构造分别如下：
 
 ```json
 {
-    "type": "normal",
+    "type": "std",
     "bg": {
         "pic": null,
         "music": null,
@@ -67,8 +65,8 @@ The basic unit of a script file is a **frame**, and there are two types: **norma
 
 ```json
 {
-    "type": "choicer",
-    "choices": [
+    "type": "slt",
+    "options": [
         {
             "name": "",
             "operation": ""
@@ -82,25 +80,23 @@ The basic unit of a script file is a **frame**, and there are two types: **norma
 }
 ```
 
-For the specific meaning of key-value pairs, please consult Penyo privately.
+### 媒体标准
 
-### Media Standard
+媒体统一存放在*media*文件夹中。按照媒体的类型，它们又可被分为*graph*、*music*、*vocal*、*sound*等分支。
 
-The media is stored in the *assets* folder.
-
-Background images are always cropped to 1280\*720 pixel JPEG files with names similar to `bgi-sceneName.jpeg`. For example, *school evening scene*:
+背景图片一律裁切为1280\*720像素的JPEG文件，其名称应当类似于 `bgi-场景名称.jpeg`。如*学校夜晚场景*：
 
 ```text
 bgi-school_evening.jpeg
 ```
 
-Character drawings are always cropped into square PNG files, but they must be full-body portraits, and the top of the person's head and heels are just against the boundary of the image, and its name should be similar to `img-characterName-status.png`. For example, *Tokai Teio looks angry*:
+人物立绘一律裁切为正方形的PNG文件，但必须是全身像，且人物的头顶和脚跟刚好抵住图片边界，其名称应当类似于 `img-角色名-状态.png`。如*东海帝王生气的样子*：
 
 ```text
 img-tokai_teio-angry.png
 ```
 
-All WAV files with character voices starting from 16 bits should have names similar to `voc-characterNames-lineSynopsis.wav`. For example, *Special Week is calling Silent Suzuka*:
+人物语音一律为16bit起的WAV文件，其名称应当类似于 `voc-角色名-台词概要.wav`。如*特别周呼喊无声铃鹿*：
 
 ```text
 voc-special_week-calling_silence_suzuka.wav
