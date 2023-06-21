@@ -3,18 +3,15 @@
  * @param {String} url JSON文件地址
  * @returns {Object} JSON对象
 */
-function getJSONObj(url) {
-    return $.parseJSON($.ajax({
-        url: url,
-        dataType: "json",
-        async: false
-    }).responseText)
+export async function getObjFromJSON(url) {
+    const objT = await fetch(url)
+    return objT.json()
 }
 
 /**
  * 根据窗口尺寸调整画面位置。
 */
-function reFit() {
+export function reFit() {
     const W_UNIT = window.innerWidth / 16.0
     const H_UNIT = window.innerHeight / 9.0
     stylify(document.querySelector("#frame"), "zoom: " + ((W_UNIT > H_UNIT ?
@@ -27,7 +24,7 @@ function reFit() {
  * @param {Element} e HTML元素
  * @param {String} cssText CSS属性字符串。若为空则表示清空所有内联样式
 */
-function stylify(e, cssText) {
+export function stylify(e, cssText) {
     if (e.style.cssText == undefined)
         e.style.cssText = ""
     e.style.cssText += cssText

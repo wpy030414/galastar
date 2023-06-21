@@ -1,50 +1,58 @@
-/**
- * 检查前往下一帧的请求是否合法。
-*/
-function preFlashFrame() {
-    if (isRolling) {
-        if (new Date().getTime() - fts < 600)
-            return
-        clearInterval(rtid)
-        roll(document.querySelector("#text-body"), stNow, 0)
-    } else {
-        if (new Date().getTime() - fts < 1000)
-            return
-        flashFrame()
-    }
-}
+import * as Util from "./utility.js"
+
+/** 剧本 */
+var frameScript = "./assets/chapter-test-1.json"
+/** 下一剧本 */
+var nextFrameScript = frameScript
+/** 剧本对象 */
+var fss = await Util.getObjFromJSON(frameScript)
+/** 剧本帧 */
+var frameCode = 0
+/** #frame-text隐藏状态 */
+var isTextHidden = false
+/** #text-logs隐藏状态 */
+var isLogsHidden = true
+/** 分支选择状态 */
+var isChoosing = false
+/** 字幕滚动状态 */
+var isRolling = false
+/** 字幕滚动公共线程ID */
+var rtid
+/** 正在滚动的字幕 */
+var stNow
+/** 单帧计时器 */
+var fts
 
 /**
  * 使下一帧的影响层叠到当前帧。
 */
-function flashFrame() {
-    if (frameCode > 0 &&
-        getJSONObj(frameScript).frame[frameCode - 1].isFinalFrame)
-        flashScene()
-    var frame = getJSONObj(frameScript).frame[frameCode]
+async function flashFrame() {
+    if (frameCode > 0 && fss.frame[frameCode - 1].isFinalFrame)
+        await flashScene()
+    var frame = fss.frame[frameCode]
     var text = document.querySelector("#frame-text")
     var selector = document.querySelector("#frame-selector")
     if (frame.type == "slt") {
         isChoosing = true
         document.querySelector("#graphic-role-l").setAttribute("class", "unspeaking")
         document.querySelector("#graphic-role-r").setAttribute("class", "unspeaking")
-        stylify(text, "display: none")
-        stylify(selector, "display: block")
+        Util.stylify(text, "display: none")
+        Util.stylify(selector, "display: block")
         var count = 0
         Array.from(frame.options).forEach(o => {
             selector.innerHTML += `<div class="option" op="` + o.operation + `">` +
                 o.name + `</div>`
             count++
         })
-        stylify(selector, "--count: " + count)
+        Util.stylify(selector, "--count: " + count)
         Array.from(document.getElementsByClassName("option")).forEach(c => {
             c.onclick = function () {
                 c.setAttribute("class", "option selected")
                 Array.from(document.getElementsByClassName("option")).forEach(c => {
                     if (c.getAttribute("class") != "option selected")
-                        stylify(c, "visibility: hidden")
+                        Util.stylify(c, "visibility: hidden")
                 })
-                new Function(c.getAttribute("op"))()
+                eval(c.getAttribute("op"))
                 setTimeout(function () {
                     isChoosing = false
                     flashFrame()
@@ -53,26 +61,26 @@ function flashFrame() {
         })
     } else {
         isChoosing = false
-        stylify(text, "display: block")
-        stylify(selector, "display: none")
+        Util.stylify(text, "display: block")
+        Util.stylify(selector, "display: none")
         selector.innerHTML = ""
         var bg = document.querySelector("#graphic-bg")
         var bgm = document.querySelector("#music-bg")
         {
             if (frame.bg.pic != null)
-                stylify(bg, "background-image: url(" + frame.bg.pic + ")")
+                Util.stylify(bg, "background-image: url(" + frame.bg.pic + ")")
             if (frame.bg.music != null) {
                 bgm.setAttribute("src", frame.bg.music)
                 bgm.play()
             }
             if (frame.bg.effect != null)
-                stylify(bg, frame.bg.effect)
+                Util.stylify(bg, frame.bg.effect)
         }
         var roleL = document.querySelector("#graphic-role-l")
         var vocalL = document.querySelector("#music-vocal-l")
         {
             if (frame.roleL.pic != null)
-                stylify(roleL, "background-image: url(" + frame.roleL.pic + ")")
+                Util.stylify(roleL, "background-image: url(" + frame.roleL.pic + ")")
             if (frame.roleL.vocal != null) {
                 roleL.setAttribute("class", "speaking")
                 vocalL.setAttribute("src", frame.roleL.vocal)
@@ -81,13 +89,13 @@ function flashFrame() {
             else
                 roleL.setAttribute("class", "unspeaking")
             if (frame.roleL.effect != null)
-                stylify(roleL, frame.roleL.effect)
+                Util.stylify(roleL, frame.roleL.effect)
         }
         var roleR = document.querySelector("#graphic-role-r")
         var vocalR = document.querySelector("#music-vocal-r")
         {
             if (frame.roleR.pic != null)
-                stylify(roleR, "background-image: url(" + frame.roleR.pic + ")")
+                Util.stylify(roleR, "background-image: url(" + frame.roleR.pic + ")")
             if (frame.roleR.vocal != null) {
                 roleR.setAttribute("class", "speaking")
                 vocalR.setAttribute("src", frame.roleR.vocal)
@@ -96,16 +104,16 @@ function flashFrame() {
             else
                 roleR.setAttribute("class", "unspeaking")
             if (frame.roleR.effect != null)
-                stylify(roleR, frame.roleR.effect)
+                Util.stylify(roleR, frame.roleR.effect)
         }
         var speaker = document.querySelector("#text-speaker")
         var body = document.querySelector("#text-body")
         var logs = document.querySelector("#text-logs")
         {
             if (frame.text.speaker != null)
-                stylify(speaker, "display: block")
+                Util.stylify(speaker, "display: block")
             else
-                stylify(speaker, "display: none")
+                Util.stylify(speaker, "display: none")
             speaker.innerText = frame.text.speaker
             isRolling = true
             roll(body, frame.text.body)
@@ -144,10 +152,84 @@ function roll(container, contain, ts) {
 }
 
 /**
+ * 检查前往下一帧的请求是否合法。
+*/
+function preFlashFrame() {
+    if (isRolling) {
+        if (new Date().getTime() - fts < 600)
+            return
+        clearInterval(rtid)
+        roll(document.querySelector("#text-body"), stNow, 0)
+    } else {
+        if (new Date().getTime() - fts < 1000)
+            return
+        flashFrame()
+    }
+}
+
+/**
  * 清除当前剧本的影响，并载入下一剧本。
 */
-function flashScene() {
+async function flashScene() {
     frameScript = nextFrameScript
     frameCode = 0
+    fss = await Util.getObjFromJSON(frameScript)
     document.querySelector("#text-logs").innerHTML = ""
+}
+
+window.onload = window.onresize = function () {
+    Util.reFit()
+}
+
+document.onkeydown = function (event) {
+    event.target.blur()
+    if (!isLogsHidden || isChoosing)
+        return
+    if (!isTextHidden)
+        if (event.code == "Enter")
+            preFlashFrame()
+    if (event.code == "Space") {
+        var text = document.querySelector("#frame-text")
+        if (isTextHidden)
+            Util.stylify(text, "display: block")
+        else
+            Util.stylify(text, "display: none")
+        isTextHidden = isTextHidden ? false : true
+    }
+}
+
+document.querySelector("#text-go").onclick = function () {
+    preFlashFrame()
+}
+
+document.querySelector("#functions-load").onclick = async function () {
+    if (localStorage.getItem("frame-script") == null ||
+        localStorage.getItem("frame-code") == null)
+        return
+    frameScript = localStorage.getItem("frame-script")
+    frameCode = 0
+    fss = await Util.getObjFromJSON(frameScript)
+    document.querySelector("#text-logs").innerText = ""
+    while (frameCode <= localStorage.getItem("frame-code")) {
+        clearInterval(rtid)
+        await flashFrame()
+    }
+}
+
+document.querySelector("#functions-save").onclick = function () {
+    localStorage.setItem("frame-script", frameScript)
+    localStorage.setItem("frame-code", frameCode - 1)
+}
+
+document.querySelector("#functions-logs").onclick = function () {
+    var logs = document.querySelector("#text-logs")
+    if (isLogsHidden)
+        Util.stylify(logs, "display: block")
+    else
+        Util.stylify(logs, "display: none")
+    isLogsHidden = isLogsHidden ? false : true
+}
+
+document.querySelector("#functions-settings").onclick = function () {
+
 }

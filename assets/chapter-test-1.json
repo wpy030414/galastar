@@ -53,7 +53,7 @@
             "options": [
                 {
                     "name": "看看更恶心的",
-                    "operation": "nextFrameScript = 'data/chapter-test-2.json'"
+                    "operation": "nextFrameScript = './assets/chapter-test-2.json'"
                 },
                 {
                     "name": "算了算了",
