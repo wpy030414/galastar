@@ -1,6 +1,6 @@
 {
   "name": "galastar",
-  "version": "2.0.0",
+  "version": "26.10.26",
   "private": true,
   "description": "Galastar — 可视化 Galgame 创作引擎，一键打包为可离线游玩的 Web 作品",
   "type": "module",

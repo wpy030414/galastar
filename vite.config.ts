@@ -2,6 +2,7 @@ import { defineConfig } from 'vite-plus'
 import type { PluginOption } from 'vite-plus'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
+import pkg from './package.json'
 
 // 本地开发与预览恒为根路径；
 // CI 注入 PAGES_BASE_PATH 决定线上前缀：项目页 /<repo>/，自定义域或用户页 /
@@ -15,6 +16,8 @@ const reactPlugin = react() as unknown as PluginOption
 export default defineConfig({
   base,
   plugins: [reactPlugin],
+  // 界面上的版本号只认 package.json，不手写
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, 'src') },
   },
