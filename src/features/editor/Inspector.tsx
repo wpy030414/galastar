@@ -343,24 +343,22 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                       limits={TRANSFORM_LIMITS.scale}
                       onChange={(v) => setTransform(slot, { scale: v }, 'scale')}
                     />
-                    <div className="grid grid-cols-2 gap-x-2">
-                      <TransformSlider
-                        icon={<MoveHorizontal className="h-3 w-3" />}
-                        label="X"
-                        unit="px"
-                        value={cast.transform.offsetX}
-                        limits={TRANSFORM_LIMITS.offsetX}
-                        onChange={(v) => setTransform(slot, { offsetX: v }, 'offsetX')}
-                      />
-                      <TransformSlider
-                        icon={<MoveVertical className="h-3 w-3" />}
-                        label="Y"
-                        unit="px"
-                        value={cast.transform.offsetY}
-                        limits={TRANSFORM_LIMITS.offsetY}
-                        onChange={(v) => setTransform(slot, { offsetY: v }, 'offsetY')}
-                      />
-                    </div>
+                    <TransformSlider
+                      icon={<MoveHorizontal className="h-3 w-3" />}
+                      label="横向"
+                      unit="px"
+                      value={cast.transform.offsetX}
+                      limits={TRANSFORM_LIMITS.offsetX}
+                      onChange={(v) => setTransform(slot, { offsetX: v }, 'offsetX')}
+                    />
+                    <TransformSlider
+                      icon={<MoveVertical className="h-3 w-3" />}
+                      label="纵向"
+                      unit="px"
+                      value={cast.transform.offsetY}
+                      limits={TRANSFORM_LIMITS.offsetY}
+                      onChange={(v) => setTransform(slot, { offsetY: v }, 'offsetY')}
+                    />
                     <button
                       className="flex items-center gap-1 text-[10px] text-muted-foreground/45 transition-colors hover:text-primary"
                       title="缩放与偏移恢复默认"

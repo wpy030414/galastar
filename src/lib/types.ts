@@ -44,12 +44,14 @@ export interface SpriteTransform {
 /**
  * 三个字段各自可调到哪儿。滑杆、数字输入和归一化都读这里，
  * 免得界面上的范围和落盘时的裁剪各写一份而慢慢对不上。
+ * step 取 1：滑杆与数字框必须显示同一个数，
+ * 否则输入 78 会被吸附到 5 的倍数，看起来像被改回去了。
  * 偏移上限取舞台的一半（1280/2、720 上下留裕度），足够把立绘推出画面。
  */
 export const TRANSFORM_LIMITS = {
-  scale: { min: 20, max: 300, step: 5 },
-  offsetX: { min: -640, max: 640, step: 2 },
-  offsetY: { min: -400, max: 400, step: 2 },
+  scale: { min: 20, max: 300, step: 1 },
+  offsetX: { min: -640, max: 640, step: 1 },
+  offsetY: { min: -400, max: 400, step: 1 },
 } as const satisfies Record<keyof SpriteTransform, { min: number; max: number; step: number }>
 
 export const DEFAULT_TRANSFORM: SpriteTransform = { scale: 100, offsetX: 0, offsetY: 0 }
