@@ -1,21 +1,43 @@
+import type { MessageKey } from '@/i18n'
 import type { AssetKind, AssetRecord } from './types'
 import { getBlob, putBlob } from './db'
 import { uid } from './utils'
 
+/** 素材类型的展示名走 i18n 词典，这里只存键名，避免把中文钉死在数据层 */
 export const ASSET_META: Record<
   AssetKind,
-  { label: string; prefix: string; accept: string; hint: string }
+  { labelKey: MessageKey; prefix: string; accept: string; hintKey: MessageKey }
 > = {
   background: {
-    label: '背景',
+    labelKey: 'asset.background',
     prefix: 'bg',
     accept: 'image/*',
-    hint: '建议 16:9，导出时按原尺寸打包',
+    hintKey: 'asset.background.hint',
   },
-  sprite: { label: '立绘', prefix: 'sprite', accept: 'image/*', hint: '建议透明底 PNG，全身像' },
-  bgm: { label: '音乐', prefix: 'bgm', accept: 'audio/*', hint: 'MP3 / OGG / M4A，可循环' },
-  sfx: { label: '音效', prefix: 'sfx', accept: 'audio/*', hint: '短促的一次性音效' },
-  voice: { label: '语音', prefix: 'voice', accept: 'audio/*', hint: '单句角色语音' },
+  sprite: {
+    labelKey: 'asset.sprite',
+    prefix: 'sprite',
+    accept: 'image/*',
+    hintKey: 'asset.sprite.hint',
+  },
+  bgm: {
+    labelKey: 'asset.bgm',
+    prefix: 'bgm',
+    accept: 'audio/*',
+    hintKey: 'asset.bgm.hint',
+  },
+  sfx: {
+    labelKey: 'asset.sfx',
+    prefix: 'sfx',
+    accept: 'audio/*',
+    hintKey: 'asset.sfx.hint',
+  },
+  voice: {
+    labelKey: 'asset.voice',
+    prefix: 'voice',
+    accept: 'audio/*',
+    hintKey: 'asset.voice.hint',
+  },
 }
 
 export const ASSET_KINDS: AssetKind[] = ['background', 'sprite', 'bgm', 'voice', 'sfx']

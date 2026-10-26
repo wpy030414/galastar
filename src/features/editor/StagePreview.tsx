@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, Maximize2, PencilRuler, Play, Sparkles, Square } from 'lucide-react'
 import { buildPayload } from '@/lib/project'
+import { useI18n } from '@/i18n'
 import { useEditor } from '@/store/editor'
 import { Button, Chip } from '@/components/ui'
 import { cn } from '@/lib/utils'
@@ -9,6 +10,7 @@ const PREVIEW_URL = `${import.meta.env.BASE_URL}engine/preview.html`
 
 export function StagePreview() {
   const { project, assetUrls, scene, frameId, mode, setMode, selectFrame } = useEditor()
+  const { t } = useI18n()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [ready, setReady] = useState(false)
 
@@ -103,7 +105,7 @@ export function StagePreview() {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3">
         <div className="pointer-events-auto flex items-center gap-2">
           <Chip tone={mode === 'edit' ? 'muted' : 'green'}>
-            {mode === 'play' ? '试玩中' : mode === 'title' ? '标题界面' : '编辑预览'}
+            {mode === 'play' ? t('stage.mode.play') : mode === 'title' ? t('stage.mode.title') : t('stage.mode.edit')}
           </Chip>
           <span className="rounded bg-black/40 px-1.5 py-0.5 font-mono text-[10px] text-white/45 backdrop-blur">
             1280 × 720
@@ -117,7 +119,7 @@ export function StagePreview() {
                 size="icon-sm"
                 onClick={() => step(-1)}
                 disabled={sceneIndex <= 0}
-                title="上一帧"
+                title={t('stage.prevFrame')}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -137,7 +139,7 @@ export function StagePreview() {
                 size="icon-sm"
                 onClick={() => step(1)}
                 disabled={sceneIndex >= scene.frames.length - 1}
-                title="下一帧"
+                title={t('stage.nextFrame')}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -156,11 +158,11 @@ export function StagePreview() {
             variant={mode === 'title' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setMode(mode === 'title' ? 'edit' : 'title')}
-            title="预览标题界面"
+            title={t('stage.titleTip')}
             className="backdrop-blur"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            标题
+            {t('stage.titleBtn')}
           </Button>
           <Button
             variant={mode === 'play' ? 'star' : 'ghost'}
@@ -173,7 +175,7 @@ export function StagePreview() {
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-            {mode === 'play' ? '退出试玩' : '试玩'}
+            {mode === 'play' ? t('stage.stop') : t('stage.play')}
           </Button>
         </div>
       </div>
@@ -182,7 +184,7 @@ export function StagePreview() {
         <iframe
           key={mode}
           ref={iframeRef}
-          title="Galastar 舞台预览"
+          title={t('stage.iframeTitle')}
           src={PREVIEW_URL}
           className="h-full w-full border-0"
         />
@@ -195,15 +197,14 @@ export function StagePreview() {
 
       {mode !== 'edit' ? (
         <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-[11px] text-white/55 backdrop-blur">
-          点击画面继续 · 空格/回车 · Ctrl 快进 · <kbd className="font-mono">A</kbd> 自动 · Esc 设置
-          · <kbd className="font-mono">F</kbd> 全屏
+          {t('stage.hintPlay')}
         </div>
       ) : null}
 
       {mode !== 'edit' ? (
         <div className="pointer-events-none absolute right-3 top-12 flex items-center gap-1.5 text-[10px] text-white/35">
           <Maximize2 className="h-3 w-3" />
-          <span>与导出作品完全同源</span>
+          <span>{t('stage.sameAsExport')}</span>
         </div>
       ) : (
         <div
@@ -212,7 +213,7 @@ export function StagePreview() {
           )}
         >
           <PencilRuler className="h-3 w-3" />
-          <span>选中帧即时呈现</span>
+          <span>{t('stage.selectedFrame')}</span>
         </div>
       )}
     </div>

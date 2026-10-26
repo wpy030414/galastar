@@ -105,6 +105,125 @@
     }
   }
 
+  /* ------------------------------------------------------------------ *
+   * 文案：播放器界面跟随作品语言（meta.locale），而不是打开它的浏览器
+   * ------------------------------------------------------------------ */
+
+  var STRINGS = {
+    'zh-CN': {
+      'player.auto': '自动',
+      'player.log': '记录',
+      'player.save': '存档',
+      'player.config': '设置',
+      'player.hint': '点击任意位置继续',
+      'player.endingTitle': '已到达剧本尽头',
+      'player.endingSubtitle': '这一场景没有更多内容了',
+      'player.choicePrompt': '做出你的选择',
+      'player.unnamedOption': '未命名选项',
+      'player.start': '开始游戏',
+      'player.continue': '继续游戏',
+      'player.about': '关于作品',
+      'player.untitledWork': '未命名作品',
+      'player.kickerPreview': '预览',
+      'player.kickerEnding': '结局',
+      'player.kickerChapter': '本章完',
+      'player.next': '继续',
+      'player.backToTitle': '回到标题',
+      'player.replay': '再来一次',
+      'player.backlog': '回看',
+      'player.aboutAuthor': '作者',
+      'player.aboutVersion': '版本',
+      'player.aboutEngine': '引擎',
+      'player.aboutScenes': '场景',
+      'player.scenesCount': '{n} 个',
+      'player.unknown': '未知',
+      'player.noHistory': '还没有台词记录',
+      'player.saveLoad': '存档 / 读档',
+      'player.tabSave': '存档',
+      'player.tabLoad': '读档',
+      'player.saveFallbackScene': '存档',
+      'player.noExcerpt': '（无台词）',
+      'player.emptySlot': '空存档位',
+      'player.settings': '设置',
+      'player.textSpeed': '文字速度',
+      'player.autoDelay': '自动等待',
+      'player.bgmVolume': '音乐音量',
+      'player.voiceVolume': '语音音量',
+      'player.sfxVolume': '音效音量',
+      'player.speedFastest': '极快',
+      'player.speedFast': '快',
+      'player.speedNormal': '标准',
+      'player.speedSlow': '慢',
+      'player.toggleFullscreen': '切换全屏',
+      'player.slotLabel': 'SLOT ',
+    },
+    en: {
+      'player.auto': 'Auto',
+      'player.log': 'Log',
+      'player.save': 'Save',
+      'player.config': 'Settings',
+      'player.hint': 'Click anywhere to continue',
+      'player.endingTitle': 'End of the script',
+      'player.endingSubtitle': 'There is nothing more in this scene',
+      'player.choicePrompt': 'Make your choice',
+      'player.unnamedOption': 'Untitled option',
+      'player.start': 'Start',
+      'player.continue': 'Continue',
+      'player.about': 'About',
+      'player.untitledWork': 'Untitled work',
+      'player.kickerPreview': 'Preview',
+      'player.kickerEnding': 'Ending',
+      'player.kickerChapter': 'End of chapter',
+      'player.next': 'Continue',
+      'player.backToTitle': 'Title screen',
+      'player.replay': 'Play again',
+      'player.backlog': 'Backlog',
+      'player.aboutAuthor': 'Author',
+      'player.aboutVersion': 'Version',
+      'player.aboutEngine': 'Engine',
+      'player.aboutScenes': 'Scenes',
+      'player.scenesCount': '{n}',
+      'player.unknown': 'Unknown',
+      'player.noHistory': 'No lines yet',
+      'player.saveLoad': 'Save / Load',
+      'player.tabSave': 'Save',
+      'player.tabLoad': 'Load',
+      'player.saveFallbackScene': 'Save',
+      'player.noExcerpt': '(no line)',
+      'player.emptySlot': 'Empty slot',
+      'player.settings': 'Settings',
+      'player.textSpeed': 'Text speed',
+      'player.autoDelay': 'Auto delay',
+      'player.bgmVolume': 'Music volume',
+      'player.voiceVolume': 'Voice volume',
+      'player.sfxVolume': 'SFX volume',
+      'player.speedFastest': 'Fastest',
+      'player.speedFast': 'Fast',
+      'player.speedNormal': 'Normal',
+      'player.speedSlow': 'Slow',
+      'player.toggleFullscreen': 'Toggle fullscreen',
+      'player.slotLabel': 'SLOT ',
+    },
+  }
+
+  /** 作品语言优先；数据没带 locale 时才看浏览器 */
+  function detectLang(payload) {
+    var locale = payload && payload.meta ? payload.meta.locale : null
+    if (locale === 'en' || locale === 'zh-CN') return locale
+    var nav = (global.navigator && global.navigator.language) || ''
+    return /^zh\b/i.test(nav) ? 'zh-CN' : 'en'
+  }
+
+  function textFor(lang, key, vars) {
+    var table = STRINGS[lang] || STRINGS['zh-CN']
+    var template = table[key] != null ? table[key] : STRINGS['zh-CN'][key]
+    if (template == null) return key
+    if (!vars) return template
+    return template.replace(/\{(\w+)\}/g, function (match, name) {
+      return vars[name] != null ? String(vars[name]) : match
+    })
+  }
+
   var DEFAULT_CONFIG = {
     textSpeed: 34, // 每字毫秒
     autoDelay: 1200, // 自动播放下句等待
@@ -143,6 +262,8 @@
     this.typeState = { full: '', shown: 0, done: true }
     this.bgActive = 'a'
     this.disposers = []
+    /* 语言在 build 之前定下来：标题、工具栏这些只建一次的节点才能一次写对 */
+    this.lang = detectLang(payload)
 
     this.build()
     this.bind()
@@ -182,14 +303,14 @@
     this.toolbar = el('div', 'gs-toolbar')
 
     var tools = [
-      { key: 'auto', label: '自动' },
-      { key: 'log', label: '记录' },
-      { key: 'save', label: '存档' },
-      { key: 'config', label: '设置' },
+      { key: 'auto', labelKey: 'player.auto' },
+      { key: 'log', labelKey: 'player.log' },
+      { key: 'save', labelKey: 'player.save' },
+      { key: 'config', labelKey: 'player.config' },
     ]
     this.toolButtons = {}
     tools.forEach(function (t) {
-      var btn = el('button', 'gs-tool', t.label)
+      var btn = self.label('button', 'gs-tool', t.labelKey)
       btn.type = 'button'
       btn.dataset.key = t.key
       self.toolButtons[t.key] = btn
@@ -202,7 +323,7 @@
 
     this.choices = el('div', 'gs-choices')
     this.flash = el('div', 'gs-flash')
-    this.hint = el('div', 'gs-hint', '点击任意位置继续')
+    this.hint = this.label('div', 'gs-hint', 'player.hint')
 
     var plate = el('div', 'gs-plate')
     plate.appendChild(this.bgA)
@@ -288,6 +409,7 @@
   Stage.prototype.setPayload = function (payload) {
     var self = this
     this.payload = payload
+    this.setLang(detectLang(payload))
     this.sceneMap = {}
     ;(payload.scenes || []).forEach(function (scene) {
       self.sceneMap[scene.id] = scene
@@ -310,6 +432,28 @@
       if (first) this.render({ instant: true })
     }
     this.updateTitleState()
+  }
+
+  Stage.prototype.text = function (key, vars) {
+    return textFor(this.lang, key, vars)
+  }
+
+  /** 建一个带 data-i18n 的节点：作品语言变了可以整批刷新 */
+  Stage.prototype.label = function (tag, cls, key) {
+    var node = el(tag, cls, this.text(key))
+    node.dataset.i18n = key
+    return node
+  }
+
+  Stage.prototype.setLang = function (lang) {
+    if (!lang || lang === this.lang) return
+    this.lang = lang
+    if (!this.app) return
+    /* 只刷新纯文案节点；带变量的（如「N 个场景」）在重开面板时按当前数据重算 */
+    var nodes = this.app.querySelectorAll('[data-i18n]')
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].textContent = this.text(nodes[i].getAttribute('data-i18n'))
+    }
   }
 
   Stage.prototype.setSkin = function (skin) {
@@ -356,7 +500,11 @@
 
     if (!frame) {
       this.showEnd(
-        { kind: 'ending', title: '已到达剧本尽头', subtitle: '这一场景没有更多内容了' },
+        {
+          kind: 'ending',
+          title: this.text('player.endingTitle'),
+          subtitle: this.text('player.endingSubtitle'),
+        },
         true,
       )
       return
@@ -506,7 +654,7 @@
     }
 
     clear(this.choices)
-    var title = el('div', 'gs-choice-title', frame.prompt || '做出你的选择')
+    var title = el('div', 'gs-choice-title', frame.prompt || this.text('player.choicePrompt'))
     if (frame.prompt) title.style.display = 'none'
     this.choices.appendChild(title)
 
@@ -518,7 +666,7 @@
       var btn = el('button', 'gs-choice')
       btn.type = 'button'
       var num = el('span', 'gs-choice-index', String(i + 1).padStart(2, '0'))
-      var label = el('span', 'gs-choice-text', opt.text || '未命名选项')
+      var label = el('span', 'gs-choice-text', opt.text || self.text('player.unnamedOption'))
       btn.appendChild(num)
       btn.appendChild(label)
       btn.style.animationDelay = i * 60 + 'ms'
@@ -872,9 +1020,9 @@
     var name = el('h1', 'gs-title-name')
     var sub = el('p', 'gs-title-sub')
     var menu = el('div', 'gs-title-menu')
-    this.btnStart = el('button', 'gs-title-btn gs-title-btn-primary', '开始游戏')
-    this.btnContinue = el('button', 'gs-title-btn', '继续游戏')
-    var btnAbout = el('button', 'gs-title-btn', '关于作品')
+    this.btnStart = this.label('button', 'gs-title-btn gs-title-btn-primary', 'player.start')
+    this.btnContinue = this.label('button', 'gs-title-btn', 'player.continue')
+    var btnAbout = this.label('button', 'gs-title-btn', 'player.about')
     ;[this.btnStart, this.btnContinue, btnAbout].forEach(function (b) {
       b.type = 'button'
       menu.appendChild(b)
@@ -908,7 +1056,7 @@
   Stage.prototype.updateTitleState = function () {
     if (!this.payload) return
     var meta = this.payload.meta
-    this.titleName.textContent = meta.name || '未命名作品'
+    this.titleName.textContent = meta.name || this.text('player.untitledWork')
     this.titleSub.textContent = (meta.title && meta.title.subtitle) || ''
     this.titleFoot.textContent = [meta.author, meta.version].filter(Boolean).join(' · ')
     var bg = meta.title && meta.title.background ? this.assetPath(meta.title.background) : ''
@@ -937,7 +1085,11 @@
     var kicker = el(
       'div',
       'gs-end-kicker',
-      placeholder ? '预览' : frame.kind === 'ending' ? '结局' : '本章完',
+      placeholder
+        ? this.text('player.kickerPreview')
+        : frame.kind === 'ending'
+          ? this.text('player.kickerEnding')
+          : this.text('player.kickerChapter'),
     )
     var title = el('h2', 'gs-end-title', frame.title || '—')
     var sub = el('p', 'gs-end-sub', placeholder ? frame.subtitle || '' : frame.subtitle || '')
@@ -952,7 +1104,7 @@
     box.appendChild(sub)
 
     if (!placeholder && frame.next && this.sceneMap[frame.next]) {
-      var btnNext = el('button', 'gs-title-btn gs-title-btn-primary', '继续')
+      var btnNext = this.label('button', 'gs-title-btn gs-title-btn-primary', 'player.next')
       btnNext.type = 'button'
       btnNext.addEventListener('click', function (ev) {
         ev.stopPropagation()
@@ -960,7 +1112,7 @@
       })
       menu.appendChild(btnNext)
     }
-    var btnTitle = el('button', 'gs-title-btn', '回到标题')
+    var btnTitle = this.label('button', 'gs-title-btn', 'player.backToTitle')
     btnTitle.type = 'button'
     btnTitle.addEventListener('click', function (ev) {
       ev.stopPropagation()
@@ -970,7 +1122,7 @@
       }
       self.showTitle()
     })
-    var btnReplay = el('button', 'gs-title-btn', '再来一次')
+    var btnReplay = this.label('button', 'gs-title-btn', 'player.replay')
     btnReplay.type = 'button'
     btnReplay.addEventListener('click', function (ev) {
       ev.stopPropagation()
@@ -990,7 +1142,11 @@
     clear(layer)
     var panel = el('div', 'gs-sheet gs-log-sheet')
     var head = el('div', 'gs-sheet-head')
-    var title = el('h3', 'gs-sheet-title', aboutMode ? '关于作品' : '回看')
+    var title = el(
+      'h3',
+      'gs-sheet-title',
+      aboutMode ? this.text('player.about') : this.text('player.backlog'),
+    )
     var close = el('button', 'gs-close', '✕')
     close.type = 'button'
     head.appendChild(title)
@@ -999,18 +1155,21 @@
 
     if (aboutMode) {
       var about = el('div', 'gs-about')
-      about.appendChild(el('h4', '', this.payload.meta.name || '未命名作品'))
+      about.appendChild(el('h4', '', this.payload.meta.name || this.text('player.untitledWork')))
       about.appendChild(el('p', 'gs-about-sub', this.payload.meta.description || ''))
       var rows = [
-        ['作者', this.payload.meta.author || '未知'],
-        ['版本', this.payload.meta.version || '1.0.0'],
-        ['引擎', 'Galastar Runtime ' + VERSION],
-        ['场景', String((this.payload.scenes || []).length) + ' 个'],
+        ['player.aboutAuthor', this.payload.meta.author || this.text('player.unknown')],
+        ['player.aboutVersion', this.payload.meta.version || '1.0.0'],
+        ['player.aboutEngine', 'Galastar Runtime ' + VERSION],
+        [
+          'player.aboutScenes',
+          this.text('player.scenesCount', { n: (this.payload.scenes || []).length }),
+        ],
       ]
       var table = el('div', 'gs-about-table')
       rows.forEach(function (row) {
         var line = el('div', 'gs-about-row')
-        line.appendChild(el('span', 'gs-about-key', row[0]))
+        line.appendChild(el('span', 'gs-about-key', self.text(row[0])))
         line.appendChild(el('span', 'gs-about-val', row[1]))
         table.appendChild(line)
       })
@@ -1018,7 +1177,8 @@
       panel.appendChild(about)
     } else {
       var body = el('div', 'gs-log-body')
-      if (!this.view.history.length) body.appendChild(el('p', 'gs-empty', '还没有台词记录'))
+      if (!this.view.history.length)
+        body.appendChild(el('p', 'gs-empty', this.text('player.noHistory')))
       this.view.history.forEach(function (item) {
         var row = el('div', 'gs-log-row')
         if (item.name) {
@@ -1098,15 +1258,15 @@
     var layer = this.saveLayer
     var panel = el('div', 'gs-sheet gs-save-sheet')
     var head = el('div', 'gs-sheet-head')
-    head.appendChild(el('h3', 'gs-sheet-title', '存档 / 读档'))
+    head.appendChild(el('h3', 'gs-sheet-title', this.text('player.saveLoad')))
     var close = el('button', 'gs-close', '✕')
     close.type = 'button'
     head.appendChild(close)
     panel.appendChild(head)
 
     var tabs = el('div', 'gs-tabs')
-    var tabSave = el('button', 'gs-tab gs-tab-on', '存档')
-    var tabLoad = el('button', 'gs-tab', '读档')
+    var tabSave = this.label('button', 'gs-tab gs-tab-on', 'player.tabSave')
+    var tabLoad = this.label('button', 'gs-tab', 'player.tabLoad')
     tabSave.type = 'button'
     tabLoad.type = 'button'
     tabs.appendChild(tabSave)
@@ -1131,14 +1291,18 @@
           var s = saves['s' + slotNo]
           var card = el('button', 'gs-save-slot')
           card.type = 'button'
-          var no = el('div', 'gs-save-no', 'SLOT ' + pad2(slotNo))
+          var no = el('div', 'gs-save-no', self.text('player.slotLabel') + pad2(slotNo))
           var main = el('div', 'gs-save-main')
           if (s) {
-            main.appendChild(el('div', 'gs-save-scene', s.sceneName || '存档'))
-            main.appendChild(el('div', 'gs-save-excerpt', s.excerpt || '（无台词）'))
+            main.appendChild(
+              el('div', 'gs-save-scene', s.sceneName || self.text('player.saveFallbackScene')),
+            )
+            main.appendChild(
+              el('div', 'gs-save-excerpt', s.excerpt || self.text('player.noExcerpt')),
+            )
             main.appendChild(el('div', 'gs-save-time', stamp(s.savedAt)))
           } else {
-            main.appendChild(el('div', 'gs-save-empty', '空存档位'))
+            main.appendChild(el('div', 'gs-save-empty', self.text('player.emptySlot')))
           }
           card.appendChild(no)
           card.appendChild(main)
@@ -1180,7 +1344,7 @@
     var layer = this.configLayer
     var panel = el('div', 'gs-sheet gs-config-sheet')
     var head = el('div', 'gs-sheet-head')
-    head.appendChild(el('h3', 'gs-sheet-title', '设置'))
+    head.appendChild(el('h3', 'gs-sheet-title', this.text('player.settings')))
     var close = el('button', 'gs-close', '✕')
     close.type = 'button'
     head.appendChild(close)
@@ -1190,18 +1354,24 @@
     var fields = [
       {
         key: 'textSpeed',
-        label: '文字速度',
+        labelKey: 'player.textSpeed',
         min: 8,
         max: 90,
         step: 2,
         invert: true,
         fmt: function (v) {
-          return v <= 12 ? '极快' : v <= 30 ? '快' : v <= 55 ? '标准' : '慢'
+          return v <= 12
+            ? self.text('player.speedFastest')
+            : v <= 30
+              ? self.text('player.speedFast')
+              : v <= 55
+                ? self.text('player.speedNormal')
+                : self.text('player.speedSlow')
         },
       },
       {
         key: 'autoDelay',
-        label: '自动等待',
+        labelKey: 'player.autoDelay',
         min: 200,
         max: 4000,
         step: 100,
@@ -1211,7 +1381,7 @@
       },
       {
         key: 'bgmVolume',
-        label: '音乐音量',
+        labelKey: 'player.bgmVolume',
         min: 0,
         max: 1,
         step: 0.05,
@@ -1221,7 +1391,7 @@
       },
       {
         key: 'voiceVolume',
-        label: '语音音量',
+        labelKey: 'player.voiceVolume',
         min: 0,
         max: 1,
         step: 0.05,
@@ -1231,7 +1401,7 @@
       },
       {
         key: 'sfxVolume',
-        label: '音效音量',
+        labelKey: 'player.sfxVolume',
         min: 0,
         max: 1,
         step: 0.05,
@@ -1242,7 +1412,7 @@
     ]
     fields.forEach(function (f) {
       var row = el('label', 'gs-config-row')
-      var label = el('span', 'gs-config-label', f.label)
+      var label = el('span', 'gs-config-label', self.text(f.labelKey))
       var value = el('span', 'gs-config-value', f.fmt(self.config[f.key]))
       var input = el('input', 'gs-range')
       input.type = 'range'
@@ -1271,13 +1441,13 @@
     })
 
     var actions = el('div', 'gs-config-actions')
-    var btnFs = el('button', 'gs-title-btn', '切换全屏')
+    var btnFs = this.label('button', 'gs-title-btn', 'player.toggleFullscreen')
     btnFs.type = 'button'
     btnFs.addEventListener('click', function (ev) {
       ev.stopPropagation()
       self.toggleFullscreen()
     })
-    var btnBack = el('button', 'gs-title-btn', '返回标题')
+    var btnBack = this.label('button', 'gs-title-btn', 'player.backToTitle')
     btnBack.type = 'button'
     btnBack.addEventListener('click', function (ev) {
       ev.stopPropagation()

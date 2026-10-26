@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 /* ---------------------------------- 按钮 ---------------------------------- */
@@ -22,8 +23,8 @@ const buttonStyles = cva(
           'bg-primary text-primary-foreground shadow-[0_8px_24px_-12px_hsl(var(--primary))] hover:brightness-110 active:brightness-95',
         secondary:
           'border border-border/80 bg-raised text-foreground hover:border-border hover:bg-raised/70',
-        ghost: 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground',
-        outline: 'border border-border/80 text-foreground hover:bg-white/[0.05]',
+        ghost: 'text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground',
+        outline: 'border border-border/80 text-foreground hover:bg-foreground/[0.05]',
         danger: 'border border-destruct/40 bg-destruct/10 text-destruct hover:bg-destruct/20',
         star: 'border border-star/40 bg-star/10 text-star hover:bg-star/20',
       },
@@ -193,7 +194,7 @@ export function Slider({
       onChange={(e) => onChange(Number(e.target.value))}
       className={cn(
         'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-[hsl(var(--primary))]',
-        '[&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white',
+        '[&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_hsl(var(--border))]',
         className,
       )}
     />
@@ -259,6 +260,7 @@ export function Dialog({
   width?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const { t } = useI18n()
 
   // onClose 基本都是内联箭头函数，每次渲染都是新引用。
   // 把它放进 ref 而不是 effect 依赖 —— 否则面板里每敲一个字触发重渲染，
@@ -312,7 +314,7 @@ export function Dialog({
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="关闭">
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t('common.close')}>
             <svg
               viewBox="0 0 24 24"
               className="h-4 w-4"
@@ -403,7 +405,7 @@ export function MenuItem({
         'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors',
         danger
           ? 'text-destruct hover:bg-destruct/10'
-          : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground',
+          : 'text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground',
       )}
     >
       {icon}
@@ -427,8 +429,8 @@ export function Chip({
     default: 'border-border/70 bg-raised/60 text-muted-foreground',
     primary: 'border-primary/30 bg-primary/10 text-primary',
     star: 'border-star/30 bg-star/10 text-star',
-    muted: 'border-transparent bg-white/[0.04] text-muted-foreground/80',
-    green: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+    muted: 'border-transparent bg-foreground/[0.04] text-muted-foreground/80',
+    green: 'border-success/30 bg-success/10 text-success',
   }
   return (
     <span
@@ -519,7 +521,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               item.tone === 'error'
                 ? 'border-destruct/40 bg-destruct/15 text-destruct'
                 : item.tone === 'success'
-                  ? 'border-emerald-500/30 bg-emerald-950/80 text-emerald-300'
+                  ? 'border-success/30 bg-success/15 text-success'
                   : 'border-border/80 bg-panel/95 text-foreground',
             )}
           >

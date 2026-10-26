@@ -16,6 +16,7 @@ import {
 import type { AssetKind, Character } from '@/lib/types'
 import { ASSET_KINDS, ASSET_META } from '@/lib/assets'
 import { useEditor } from '@/store/editor'
+import { useI18n } from '@/i18n'
 import { cn, formatBytes } from '@/lib/utils'
 import {
   Button,
@@ -34,6 +35,7 @@ type RailTab = 'script' | 'asset' | 'cast'
 
 export function LeftRail() {
   const [tab, setTab] = useState<RailTab>('script')
+  const { t } = useI18n()
   return (
     <aside className="flex w-[276px] shrink-0 flex-col border-r border-border/60 bg-panel/40">
       <div className="p-2">
@@ -41,9 +43,9 @@ export function LeftRail() {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'script', label: '剧本', icon: <Clapperboard className="h-3.5 w-3.5" /> },
-            { value: 'asset', label: '素材', icon: <Layers className="h-3.5 w-3.5" /> },
-            { value: 'cast', label: '角色', icon: <Users className="h-3.5 w-3.5" /> },
+            { value: 'script', label: t('rail.tab.script'), icon: <Clapperboard className="h-3.5 w-3.5" /> },
+            { value: 'asset', label: t('rail.tab.asset'), icon: <Layers className="h-3.5 w-3.5" /> },
+            { value: 'cast', label: t('rail.tab.cast'), icon: <Users className="h-3.5 w-3.5" /> },
           ]}
         />
       </div>
@@ -60,6 +62,7 @@ export function LeftRail() {
 function SceneList() {
   const { project, sceneId, selectScene, addScene, patchScene, removeScene, moveScene } =
     useEditor()
+  const { t } = useI18n()
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
 
@@ -67,12 +70,12 @@ function SceneList() {
     <div className="pb-4">
       <SectionTitle
         action={
-          <Button variant="ghost" size="icon-sm" onClick={addScene} title="新建场景">
+          <Button variant="ghost" size="icon-sm" onClick={addScene} title={t('rail.newScene')}>
             <Plus className="h-3.5 w-3.5" />
           </Button>
         }
       >
-        场景 · {project.scenes.length}
+        {t('rail.scenes', { n: project.scenes.length })}
       </SectionTitle>
 
       <div className="space-y-0.5 px-2">
@@ -90,7 +93,7 @@ function SceneList() {
                 'group flex cursor-pointer items-center gap-2 rounded-md py-1.5 pl-2 pr-1 transition-colors',
                 active
                   ? 'bg-primary/10 text-foreground'
-                  : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground',
               )}
             >
               <span className="w-4 shrink-0 font-mono text-[10px] tracking-wider text-muted-foreground/45">
@@ -125,7 +128,7 @@ function SceneList() {
                   trigger={
                     <button
                       className="rounded p-0.5 text-muted-foreground/40 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                      aria-label="场景操作"
+                      aria-label={t('rail.sceneMenu')}
                     >
                       <MoreHorizontal className="h-3.5 w-3.5" />
                     </button>
@@ -140,7 +143,7 @@ function SceneList() {
                           close()
                         }}
                       >
-                        重命名
+                        {t('common.rename')}
                       </MenuItem>
                       <MenuItem
                         onClick={() => {
@@ -148,7 +151,7 @@ function SceneList() {
                           close()
                         }}
                       >
-                        上移
+                        {t('common.moveUp')}
                       </MenuItem>
                       <MenuItem
                         onClick={() => {
@@ -156,7 +159,7 @@ function SceneList() {
                           close()
                         }}
                       >
-                        下移
+                        {t('common.moveDown')}
                       </MenuItem>
                       <MenuItem
                         danger
@@ -167,7 +170,7 @@ function SceneList() {
                           close()
                         }}
                       >
-                        删除场景
+                        {t('rail.deleteScene')}
                       </MenuItem>
                     </>
                   )}
@@ -179,7 +182,7 @@ function SceneList() {
       </div>
 
       <p className="mt-4 px-3 text-[11px] leading-relaxed text-muted-foreground/45">
-        双击场景名可重命名。场景之间用「选项」或「跳转」帧衔接；一段作品的第一幕就是玩家看到的开头。
+        {t('rail.sceneHint')}
       </p>
     </div>
   )
@@ -189,6 +192,7 @@ function SceneList() {
 
 function AssetLibrary() {
   const { project, assetUrls, addAssets, removeAsset } = useEditor()
+  const { t } = useI18n()
   const [kind, setKind] = useState<AssetKind>('background')
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -199,7 +203,7 @@ function AssetLibrary() {
   const upload = async (files: File[]) => {
     if (!files.length) return
     await addAssets(files, kind)
-    toast(`已导入 ${files.length} 个${meta.label}`, 'success')
+    toast(t('rail.imported', { n: files.length, kind: t(meta.labelKey) }), 'success')
   }
 
   return (
@@ -221,7 +225,7 @@ function AssetLibrary() {
           <span className="font-mono text-[10px] text-muted-foreground/40">{assets.length}</span>
         }
       >
-        素材库
+        {t('rail.assets')}
       </SectionTitle>
 
       <div className="flex flex-wrap gap-1 px-2">
@@ -233,10 +237,10 @@ function AssetLibrary() {
               'rounded px-1.5 py-1 text-[11px] transition-colors',
               kind === k
                 ? 'bg-primary/15 text-primary'
-                : 'text-muted-foreground/70 hover:bg-white/[0.05] hover:text-foreground',
+                : 'text-muted-foreground/70 hover:bg-foreground/[0.05] hover:text-foreground',
             )}
           >
-            {ASSET_META[k].label}
+            {t(ASSET_META[k].labelKey)}
             <span className="ml-1 font-mono text-[9px] opacity-50">
               {project.assets.filter((a) => a.kind === k).length}
             </span>
@@ -251,11 +255,11 @@ function AssetLibrary() {
             'flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed py-4 transition-colors',
             dragging
               ? 'border-primary/70 bg-primary/10'
-              : 'border-border/70 hover:border-border hover:bg-white/[0.03]',
+              : 'border-border/70 hover:border-border hover:bg-foreground/[0.03]',
           )}
         >
           <Upload className="h-4 w-4 text-muted-foreground/60" />
-          <span className="text-[11px] text-muted-foreground">拖拽或点击上传{meta.label}</span>
+          <span className="text-[11px] text-muted-foreground">{t('rail.uploadCta', { kind: t(meta.labelKey) })}</span>
         </button>
         <input
           ref={inputRef}
@@ -305,7 +309,7 @@ function AssetLibrary() {
               <button
                 onClick={() => removeAsset(asset.id)}
                 className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white/70 opacity-0 transition-opacity hover:text-destruct group-hover:opacity-100"
-                title="删除素材"
+                title={t('rail.deleteAsset')}
               >
                 <X className="h-2.5 w-2.5" />
               </button>
@@ -317,15 +321,14 @@ function AssetLibrary() {
       {assets.length === 0 ? (
         <EmptyState
           icon={<ImageIcon className="h-6 w-6" />}
-          title={`还没有${meta.label}`}
-          hint={meta.hint}
+          title={t('rail.emptyAsset', { kind: t(meta.labelKey) })}
+          hint={t(meta.hintKey)}
           className="py-6"
         />
       ) : null}
 
       <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground/45">
-        素材只存在本机浏览器（IndexedDB）。打包时按原格式写入 zip 的 media/
-        目录，路径自动改为相对路径。
+        {t('rail.assetHint')}
       </p>
     </div>
   )
@@ -335,6 +338,7 @@ function AssetLibrary() {
 
 function CharacterList() {
   const { project, assetUrls, mutate } = useEditor()
+  const { t } = useI18n()
   const [openId, setOpenId] = useState<string | null>(project.characters[0]?.id ?? null)
   const [newExpr, setNewExpr] = useState('')
 
@@ -352,12 +356,12 @@ function CharacterList() {
           <Button
             variant="ghost"
             size="icon-sm"
-            title="新建角色"
+            title={t('rail.newCharacter')}
             onClick={() => {
               mutate((draft) => {
                 draft.characters.push({
                   id: `c_${Math.random().toString(36).slice(2, 8)}`,
-                  name: '新角色',
+                  name: t('rail.defaultCharacterName'),
                   color: '#9d8cff',
                   sprites: {},
                 })
@@ -368,7 +372,7 @@ function CharacterList() {
           </Button>
         }
       >
-        角色 · {project.characters.length}
+        {t('rail.cast', { n: project.characters.length })}
       </SectionTitle>
 
       <div className="space-y-1.5 px-2">
@@ -400,10 +404,10 @@ function CharacterList() {
                     )}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[13px]">
-                    {char.name || '未命名'}
+                    {char.name || t('common.untitled')}
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground/40">
-                    {Object.keys(char.sprites).length} 表情
+                    {t('rail.expressionCount', { n: Object.keys(char.sprites).length })}
                   </span>
                   <ChevronDown
                     className={cn(
@@ -421,14 +425,14 @@ function CharacterList() {
                       value={char.name}
                       onChange={(e) => patchCharacter(char.id, (c) => (c.name = e.target.value))}
                       className="h-7 text-xs"
-                      placeholder="角色名"
+                      placeholder={t('rail.characterNamePlaceholder')}
                     />
                     <input
                       type="color"
                       value={char.color}
                       onChange={(e) => patchCharacter(char.id, (c) => (c.color = e.target.value))}
                       className="h-7 w-8 shrink-0 cursor-pointer rounded border border-border/80 bg-transparent"
-                      title="名字牌颜色"
+                      title={t('rail.nameColor')}
                     />
                   </div>
 
@@ -455,7 +459,7 @@ function CharacterList() {
                               delete c.sprites[expr]
                             })
                           }
-                          title="删除表情"
+                          title={t('rail.deleteExpression')}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -467,7 +471,7 @@ function CharacterList() {
                     <Input
                       value={newExpr}
                       onChange={(e) => setNewExpr(e.target.value)}
-                      placeholder="表情名，如 微笑"
+                      placeholder={t('rail.expressionPlaceholder')}
                       className="h-7 text-xs"
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter' || !newExpr.trim()) return
@@ -478,7 +482,7 @@ function CharacterList() {
                     <Button
                       variant="secondary"
                       size="icon-sm"
-                      title="添加表情"
+                      title={t('rail.addExpression')}
                       onClick={() => {
                         if (!newExpr.trim()) return
                         patchCharacter(char.id, (c) => (c.sprites[newExpr.trim()] = ''))
@@ -508,7 +512,7 @@ function CharacterList() {
                     }}
                   >
                     <Trash2 className="h-3 w-3" />
-                    删除角色
+                    {t('rail.deleteCharacter')}
                   </button>
                 </div>
               ) : null}
@@ -520,32 +524,13 @@ function CharacterList() {
       {project.characters.length === 0 ? (
         <EmptyState
           icon={<User className="h-6 w-6" />}
-          title="还没有角色"
-          hint="创建角色并为它绑定立绘表情，就能在帧里安排谁站在哪里。"
-          action={
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() =>
-                mutate((draft) => {
-                  draft.characters.push({
-                    id: `c_${Math.random().toString(36).slice(2, 8)}`,
-                    name: '新角色',
-                    color: '#9d8cff',
-                    sprites: {},
-                  })
-                })
-              }
-            >
-              <Plus className="h-3 w-3" />
-              新建角色
-            </Button>
-          }
+          title={t('rail.emptyCast')}
+          hint={t('rail.emptyCastHint')}
         />
       ) : null}
 
       <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground/45">
-        表情即立绘。同一个角色可以挂多张图，在帧里切换表情即可演出变化。
+        {t('rail.castHint')}
       </p>
     </div>
   )
@@ -555,12 +540,13 @@ function CharacterList() {
 
 function RailFooter() {
   const { project } = useEditor()
+  const { t } = useI18n()
   const total = project.assets.reduce((sum, a) => sum + a.size, 0)
   return (
     <div className="flex items-center justify-between border-t border-border/50 px-3 py-2 text-[10px] text-muted-foreground/45">
       <span className="flex items-center gap-1">
         <Layers className="h-3 w-3" />
-        {project.assets.length} 素材
+        {t('rail.footerAssets', { n: project.assets.length })}
       </span>
       <Chip tone="muted">{formatBytes(total)}</Chip>
     </div>

@@ -3,7 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * 主题：:root 是深色（品牌默认），.light 覆盖成浅色。
+   * 所有界面颜色都必须走这些变量 —— 组件里写死 hsl(...) 的话，
+   * 切主题时就会留下一块不听话的深色。
+   */
   :root {
+    color-scheme: dark;
     --background: 250 24% 4%;
     --foreground: 250 20% 96%;
     --panel: 249 20% 6.5%;
@@ -23,8 +29,53 @@
     --destruct-foreground: 0 0% 100%;
     --star: 36 92% 62%;
     --star-foreground: 30 60% 8%;
+    --success: 158 68% 56%;
+    --info: 199 92% 68%;
     --radius: 0.75rem;
+
+    /* 结构性表面：工具栏、滚动条、面板投影、星点 */
+    --toolbar-from: hsl(249 22% 7% / 0.92);
+    --toolbar-to: hsl(249 22% 5.5% / 0.92);
+    --scrollbar: 250 14% 22%;
+    --scrollbar-hover: 250 14% 32%;
+    --panel-inset: hsl(0 0% 100% / 0.03);
+    --panel-drop: hsl(250 60% 2% / 0.9);
+    --dot: 0 0% 100%;
   }
+
+  .light {
+    color-scheme: light;
+    --background: 250 30% 98%;
+    --foreground: 250 24% 12%;
+    --panel: 0 0% 100%;
+    --raised: 250 26% 96%;
+    --border: 250 16% 87%;
+    --input: 250 16% 82%;
+    --ring: 252 82% 58%;
+    --primary: 252 80% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 250 22% 94%;
+    --secondary-foreground: 250 24% 16%;
+    --muted: 250 20% 93%;
+    --muted-foreground: 250 12% 42%;
+    --accent: 252 70% 95%;
+    --accent-foreground: 252 62% 34%;
+    --destruct: 356 70% 48%;
+    --destruct-foreground: 0 0% 100%;
+    --star: 34 92% 42%;
+    --star-foreground: 0 0% 100%;
+    --success: 158 66% 32%;
+    --info: 199 90% 34%;
+
+    --toolbar-from: hsl(0 0% 100% / 0.86);
+    --toolbar-to: hsl(250 28% 97% / 0.94);
+    --scrollbar: 250 12% 80%;
+    --scrollbar-hover: 250 12% 68%;
+    --panel-inset: hsl(0 0% 100% / 0.85);
+    --panel-drop: hsl(250 40% 40% / 0.22);
+    --dot: 250 28% 34%;
+  }
+
 
   * {
     @apply border-border;
@@ -63,14 +114,14 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(250 14% 22%);
+    background: hsl(var(--scrollbar));
     border: 3px solid transparent;
     border-radius: 999px;
     background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(250 14% 32%);
+    background: hsl(var(--scrollbar-hover));
     background-clip: content-box;
   }
 
@@ -90,8 +141,8 @@
   .panel {
     @apply rounded-lg border border-border/70 bg-panel;
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.03) inset,
-      0 20px 40px -32px #000;
+      0 1px 0 0 var(--panel-inset) inset,
+      0 20px 40px -32px var(--panel-drop);
   }
 
   .hairline {
@@ -100,19 +151,19 @@
 
   /* 顶部/底部工具栏的统一毛玻璃 */
   .toolbar {
-    background: linear-gradient(180deg, hsl(249 22% 7% / 0.92), hsl(249 22% 5.5% / 0.92));
+    background: linear-gradient(180deg, var(--toolbar-from), var(--toolbar-to));
     backdrop-filter: blur(16px) saturate(140%);
   }
 
   /* 星空底纹：登录/项目库的舞台背景 */
   .starfield {
     background-image:
-      radial-gradient(1px 1px at 20% 30%, hsl(0 0% 100% / 0.55) 50%, transparent 51%),
-      radial-gradient(1px 1px at 70% 12%, hsl(0 0% 100% / 0.4) 50%, transparent 51%),
-      radial-gradient(1.4px 1.4px at 42% 68%, hsl(36 92% 70% / 0.5) 50%, transparent 51%),
-      radial-gradient(1px 1px at 88% 58%, hsl(0 0% 100% / 0.35) 50%, transparent 51%),
-      radial-gradient(1px 1px at 12% 82%, hsl(0 0% 100% / 0.3) 50%, transparent 51%),
-      radial-gradient(1.2px 1.2px at 58% 40%, hsl(252 100% 82% / 0.45) 50%, transparent 51%);
+      radial-gradient(1px 1px at 20% 30%, hsl(var(--dot) / 0.55) 50%, transparent 51%),
+      radial-gradient(1px 1px at 70% 12%, hsl(var(--dot) / 0.4) 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 42% 68%, hsl(var(--star) / 0.5) 50%, transparent 51%),
+      radial-gradient(1px 1px at 88% 58%, hsl(var(--dot) / 0.35) 50%, transparent 51%),
+      radial-gradient(1px 1px at 12% 82%, hsl(var(--dot) / 0.3) 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 58% 40%, hsl(var(--primary) / 0.45) 50%, transparent 51%);
     background-size: 420px 420px;
   }
 
@@ -121,6 +172,14 @@
       radial-gradient(60% 50% at 20% 0%, hsl(252 90% 40% / 0.28), transparent 70%),
       radial-gradient(50% 45% at 85% 15%, hsl(190 90% 40% / 0.16), transparent 70%),
       radial-gradient(40% 40% at 60% 100%, hsl(36 90% 45% / 0.1), transparent 70%);
+  }
+
+  /* 浅色下同样的极光要收敛，否则白底上会糊成一片色斑 */
+  .light .aurora {
+    background:
+      radial-gradient(60% 50% at 20% 0%, hsl(252 90% 62% / 0.16), transparent 70%),
+      radial-gradient(50% 45% at 85% 15%, hsl(190 90% 62% / 0.12), transparent 70%),
+      radial-gradient(40% 40% at 60% 100%, hsl(36 90% 60% / 0.1), transparent 70%);
   }
 
   /* 表单里的分区小标题 */

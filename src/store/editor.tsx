@@ -18,6 +18,7 @@ import {
   previousLineFrame,
 } from '@/lib/project'
 import { deleteBlob, readProject, writeProject } from '@/lib/db'
+import { useI18n } from '@/i18n'
 import { importAssetFile, loadAssetUrls, revokeAssetUrls } from '@/lib/assets'
 import { uid } from '@/lib/utils'
 
@@ -66,7 +67,7 @@ const EditorContext = createContext<EditorApi | null>(null)
 
 export function useEditor(): EditorApi {
   const ctx = useContext(EditorContext)
-  if (!ctx) throw new Error('useEditor 必须在 EditorProvider 内使用')
+  if (!ctx) throw new Error('useEditor must be used inside EditorProvider')
   return ctx
 }
 
@@ -79,6 +80,7 @@ export function EditorProvider({
   onExit: () => void
   children: ReactNode
 }) {
+  const { t } = useI18n()
   const [project, setProject] = useState<Project | null>(null)
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({})
   const [sceneId, setSceneId] = useState('')
@@ -262,7 +264,7 @@ export function EditorProvider({
             ? createChoiceFrame()
             : type === 'jump'
               ? createJumpFrame()
-              : createEndFrame()
+              : createEndFrame(t('project.chapterEndTitle'))
       mutate((draft) => {
         const sc = draft.scenes.find((s) => s.id === scene.id)
         if (!sc) return
@@ -270,7 +272,7 @@ export function EditorProvider({
       })
       setFrameId(next.id)
     },
-    [mutate, scene, frameId],
+    [mutate, scene, frameId, t],
   )
 
   const removeFrame = useCallback(
@@ -325,13 +327,13 @@ export function EditorProvider({
   )
 
   const addScene = useCallback(() => {
-    const next = createScene(`新场景 ${(project?.scenes.length ?? 0) + 1}`)
+    const next = createScene(t('store.newSceneName', { n: (project?.scenes.length ?? 0) + 1 }))
     mutate((draft) => {
       draft.scenes.push(next)
     })
     setSceneId(next.id)
     setFrameId(next.frames[0]?.id ?? null)
-  }, [mutate, project?.scenes.length])
+  }, [mutate, project?.scenes.length, t])
 
   const patchScene = useCallback(
     (id: string, patch: Partial<Scene>) => {
@@ -524,7 +526,7 @@ export function EditorProvider({
   if (!value) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        <span className="animate-pulse">正在打开作品…</span>
+        <span className="animate-pulse">{t('store.opening')}</span>
       </div>
     )
   }

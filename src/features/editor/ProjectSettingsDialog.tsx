@@ -1,53 +1,55 @@
 import { useState } from 'react'
 import { Plus, Sparkles, Trash2 } from 'lucide-react'
 import { useEditor } from '@/store/editor'
-import { Button, Dialog, Field, Input, Switch, Textarea } from '@/components/ui'
+import { useI18n, type MessageKey } from '@/i18n'
+import { Button, Dialog, Field, Input, Segmented, Switch, Textarea } from '@/components/ui'
 import { AssetPicker } from './AssetPicker'
 import { cn } from '@/lib/utils'
 import type { UiSkin } from '@/lib/types'
 
 const ACCENTS = ['#9d8cff', '#7aa2ff', '#ffb1a0', '#7fd1b9', '#f5b544', '#f27a9c']
 
-const SKINS: { id: UiSkin; name: string }[] = [
-  { id: 'pgf', name: 'PGF 经典' },
-  { id: 'night', name: '夜航' },
+const SKINS: { id: UiSkin; labelKey: MessageKey }[] = [
+  { id: 'pgf', labelKey: 'settings.skin.pgf' },
+  { id: 'night', labelKey: 'settings.skin.night' },
 ]
 
 export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { project, patchMeta, mutate } = useEditor()
+  const { t } = useI18n()
   const [flagKey, setFlagKey] = useState('')
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title="项目设置"
-      description="这些信息会写进导出作品的标题界面与关于页。"
+      title={t('settings.title')}
+      description={t('settings.description')}
       width="max-w-xl"
       footer={
         <Button variant="primary" onClick={onClose}>
-          完成
+          {t('settings.done')}
         </Button>
       }
     >
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="作品名">
+          <Field label={t('settings.name')}>
             <Input
               value={project.meta.name}
               onChange={(e) => patchMeta({ name: e.target.value })}
             />
           </Field>
-          <Field label="作者">
+          <Field label={t('settings.author')}>
             <Input
               value={project.meta.author}
-              placeholder="署名会显示在标题界面"
+              placeholder={t('settings.authorPlaceholder')}
               onChange={(e) => patchMeta({ author: e.target.value })}
             />
           </Field>
         </div>
 
-        <Field label="简介" hint="显示在播放器「关于作品」面板里">
+        <Field label={t('settings.summary')} hint={t('settings.summaryHint')}>
           <Textarea
             rows={3}
             value={project.meta.description}
@@ -57,13 +59,13 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="版本号">
+          <Field label={t('settings.version')}>
             <Input
               value={project.meta.version}
               onChange={(e) => patchMeta({ version: e.target.value })}
             />
           </Field>
-          <Field label="主题色" hint="「夜航」皮肤与编辑器高亮都跟随它">
+          <Field label={t('settings.accent')} hint={t('settings.accentHint')}>
             <div className="flex items-center gap-1.5">
               {ACCENTS.map((color) => (
                 <button
@@ -89,7 +91,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
           </Field>
         </div>
 
-        <Field label="界面皮肤" hint="决定玩家看到的画面长什么样，改完舞台立刻更新">
+        <Field label={t('settings.skin')} hint={t('settings.skinHint')}>
           <div className="grid grid-cols-2 gap-2.5">
             {SKINS.map((skin) => (
               <button
@@ -103,37 +105,49 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
                 )}
               >
                 <SkinPreview skin={skin.id} accent={project.meta.theme.accent} />
-                <p className="px-3 py-2.5 text-[12.5px] font-medium">{skin.name}</p>
+                <p className="px-3 py-2.5 text-[12.5px] font-medium">{t(skin.labelKey)}</p>
               </button>
             ))}
           </div>
         </Field>
 
+        <Field label={t('settings.language')} hint={t('settings.languageHint')}>
+          <Segmented
+            value={project.meta.locale}
+            options={[
+              { value: 'zh-CN', label: '简体中文' },
+              { value: 'en', label: 'English' },
+            ]}
+            onChange={(v) => patchMeta({ locale: v })}
+            className="w-full [&>button]:flex-1"
+          />
+        </Field>
+
         <div className="rounded-lg border border-border/60 bg-raised/25 p-3">
           <div className="mb-2.5 flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-medium">标题界面</p>
+              <p className="text-[13px] font-medium">{t('settings.titleScreen')}</p>
               <p className="text-[11px] text-muted-foreground/60">
-                开启后玩家先看到标题，再选择开始或继续
+                {t('settings.titleScreenHint')}
               </p>
             </div>
             <Switch
               checked={project.meta.title.enabled}
               onCheckedChange={(v) => patchMeta({ title: { ...project.meta.title, enabled: v } })}
-              label="标题界面"
+              label={t('settings.titleScreen')}
             />
           </div>
           <div className="space-y-2.5">
-            <Field label="副标题">
+            <Field label={t('settings.subtitle')}>
               <Input
                 value={project.meta.title.subtitle}
-                placeholder="一行短句，显示在作品名下方"
+                placeholder={t('settings.subtitlePlaceholder')}
                 onChange={(e) =>
                   patchMeta({ title: { ...project.meta.title, subtitle: e.target.value } })
                 }
               />
             </Field>
-            <Field label="标题背景">
+            <Field label={t('settings.titleBackground')}>
               <AssetPicker
                 kind="background"
                 value={project.meta.title.background}
@@ -146,9 +160,9 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
         <div>
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-medium">标记变量</p>
+              <p className="text-[13px] font-medium">{t('settings.flags')}</p>
               <p className="text-[11px] text-muted-foreground/60">
-                选项写入、条件读取，用来做分歧与好感度
+                {t('settings.flagsHint')}
               </p>
             </div>
           </div>
@@ -165,7 +179,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
                   }
                   className="h-8 flex-1 font-mono text-[11px]"
                 />
-                <span className="text-[10px] text-muted-foreground/40">初始值</span>
+                <span className="text-[10px] text-muted-foreground/40">{t('settings.initialValue')}</span>
                 <Input
                   value={flag.initial}
                   onChange={(e) =>
@@ -191,7 +205,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
             <div className="flex items-center gap-1.5">
               <Input
                 value={flagKey}
-                placeholder="新标记名，如 affection"
+                placeholder={t('settings.newFlagPlaceholder')}
                 onChange={(e) => setFlagKey(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter' || !flagKey.trim()) return
@@ -210,7 +224,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
                 }}
               >
                 <Plus className="h-3 w-3" />
-                添加
+                {t('settings.addFlag')}
               </Button>
             </div>
           </div>
@@ -219,7 +233,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
         <div className="flex items-start gap-2 rounded-lg border border-star/25 bg-star/[0.06] p-3">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-star" />
           <p className="text-[11px] leading-relaxed text-star/80">
-            提示：每一帧都保存完整的舞台状态。改背景不必回头改前一帧，播放器按帧直接切换。
+            {t('settings.tip')}
           </p>
         </div>
       </div>

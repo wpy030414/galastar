@@ -26,6 +26,7 @@ import {
 } from '@/lib/types'
 import { withCastTransform } from '@/lib/project'
 import { useEditor } from '@/store/editor'
+import { useI18n, type MessageKey } from '@/i18n'
 import { cn } from '@/lib/utils'
 import {
   Button,
@@ -41,30 +42,31 @@ import {
 } from '@/components/ui'
 import { AssetPicker } from './AssetPicker'
 
-const TRANSITIONS: Array<{ value: Transition; label: string }> = [
-  { value: 'cut', label: '直接' },
-  { value: 'fade', label: '淡入' },
-  { value: 'dissolve', label: '溶接' },
-  { value: 'flash', label: '闪白' },
-  { value: 'rise', label: '上升' },
+const TRANSITIONS: Array<{ value: Transition; labelKey: MessageKey }> = [
+  { value: 'cut', labelKey: 'inspector.transition.cut' },
+  { value: 'fade', labelKey: 'inspector.transition.fade' },
+  { value: 'dissolve', labelKey: 'inspector.transition.dissolve' },
+  { value: 'flash', labelKey: 'inspector.transition.flash' },
+  { value: 'rise', labelKey: 'inspector.transition.rise' },
 ]
 
-const SLOT_LABELS: Array<{ slot: Slot; label: string }> = [
-  { slot: 'left', label: '左' },
-  { slot: 'center', label: '中' },
-  { slot: 'right', label: '右' },
+const SLOT_LABELS: Array<{ slot: Slot; labelKey: MessageKey }> = [
+  { slot: 'left', labelKey: 'inspector.cast.slot.left' },
+  { slot: 'center', labelKey: 'inspector.cast.slot.center' },
+  { slot: 'right', labelKey: 'inspector.cast.slot.right' },
 ]
 
 export function Inspector() {
   const { frame } = useEditor()
+  const { t } = useI18n()
   if (!frame) {
     return (
       <aside className="flex w-[372px] shrink-0 flex-col border-l border-border/60 bg-panel/40">
         <EmptyState
           className="flex-1"
           icon={<Type className="h-6 w-6" />}
-          title="未选中任何帧"
-          hint="在下方剧本列表中点击一帧，这里会显示它的全部可调参数。"
+          title={t('inspector.none.title')}
+          hint={t('inspector.none.hint')}
         />
       </aside>
     )
@@ -77,12 +79,12 @@ export function Inspector() {
             tone={frame.type === 'choice' ? 'star' : frame.type === 'line' ? 'primary' : 'default'}
           >
             {frame.type === 'line'
-              ? '台词帧'
+              ? t('inspector.type.line')
               : frame.type === 'choice'
-                ? '选择帧'
+                ? t('inspector.type.choice')
                 : frame.type === 'jump'
-                  ? '跳转帧'
-                  : '结束帧'}
+                  ? t('inspector.type.jump')
+                  : t('inspector.type.end')}
           </Chip>
           <span className="font-mono text-[10px] text-muted-foreground/35">
             {frame.id.slice(-8)}
@@ -102,17 +104,23 @@ export function Inspector() {
 
 function FrameActions({ frame }: { frame: Frame }) {
   const { duplicateFrame, removeFrame } = useEditor()
+  const { t } = useI18n()
   return (
     <div className="flex items-center gap-0.5">
       <Button
         variant="ghost"
         size="icon-sm"
-        title="复制此帧"
+        title={t('inspector.duplicateFrame')}
         onClick={() => duplicateFrame(frame.id)}
       >
         <Copy className="h-3.5 w-3.5" />
       </Button>
-      <Button variant="ghost" size="icon-sm" title="删除此帧" onClick={() => removeFrame(frame.id)}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        title={t('inspector.deleteFrame')}
+        onClick={() => removeFrame(frame.id)}
+      >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
     </div>
@@ -123,6 +131,7 @@ function FrameActions({ frame }: { frame: Frame }) {
 
 function LineEditor({ frame }: { frame: LineFrame }) {
   const { project, patchFrame, addFrame } = useEditor()
+  const { t } = useI18n()
   const char = project.characters.find((c) => c.id === frame.speaker.characterId) ?? null
   const speakerMode = char ? 'char' : frame.speaker.name ? 'custom' : 'narration'
 
@@ -139,7 +148,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
 
   return (
     <div className="divide-y divide-border/40">
-      <Section title="台词">
+      <Section title={t('inspector.section.line')}>
         <div className="space-y-2">
           <div className="flex gap-1.5">
             <Select
@@ -149,7 +158,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                 if (v === '') patchFrame(frame.id, { speaker: { characterId: null, name: '' } })
                 else if (v === '__custom')
                   patchFrame(frame.id, {
-                    speaker: { characterId: null, name: frame.speaker.name || '名字' },
+                    speaker: { characterId: null, name: frame.speaker.name || t('inspector.line.defaultName') },
                   })
                 else {
                   const target = project.characters.find((c) => c.id === v)
@@ -158,13 +167,13 @@ function LineEditor({ frame }: { frame: LineFrame }) {
               }}
               className="flex-1"
             >
-              <option value="">旁白（无名字牌）</option>
+              <option value="">{t('inspector.line.narration')}</option>
               {project.characters.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
-              <option value="__custom">自定义名称…</option>
+              <option value="__custom">{t('inspector.line.custom')}</option>
             </Select>
             {speakerMode === 'custom' ? (
               <Input
@@ -172,7 +181,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                 onChange={(e) =>
                   patchFrame(frame.id, { speaker: { characterId: null, name: e.target.value } })
                 }
-                placeholder="名字"
+                placeholder={t('inspector.line.namePlaceholder')}
                 className="w-[104px]"
               />
             ) : null}
@@ -182,7 +191,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
             <Textarea
               value={frame.text}
               rows={5}
-              placeholder="在这里写台词。支持换行，逐字显示时长由播放器设置决定。"
+              placeholder={t('inspector.line.textPlaceholder')}
               onChange={(e) => patchFrame(frame.id, { text: e.target.value })}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -195,33 +204,36 @@ function LineEditor({ frame }: { frame: LineFrame }) {
             <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground/40">
               <span className="flex items-center gap-1">
                 <CornerDownLeft className="h-3 w-3" />
-                Ctrl / ⌘ + Enter 新建下一句
+                {t('inspector.line.newLineHint')}
               </span>
-              <span className="font-mono">{frame.text.length} 字</span>
+              <span className="font-mono">{t('inspector.line.charCount', { n: frame.text.length })}</span>
             </div>
           </div>
         </div>
       </Section>
 
-      <Section title="舞台">
+      <Section title={t('inspector.section.stage')}>
         <div className="space-y-2.5">
-          <Field label="背景">
+          <Field label={t('inspector.stage.background')}>
             <AssetPicker
               kind="background"
               value={frame.bg}
               onChange={(id) => patchFrame(frame.id, { bg: id })}
             />
           </Field>
-          <Field label="进场转场">
+          <Field label={t('inspector.stage.transition')}>
             <Segmented
               value={frame.transition}
-              options={TRANSITIONS}
+              options={TRANSITIONS.map((item) => ({
+                value: item.value,
+                label: t(item.labelKey),
+              }))}
               onChange={(v) => patchFrame(frame.id, { transition: v })}
               className="w-full [&>button]:flex-1"
             />
           </Field>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="背景音乐">
+            <Field label={t('inspector.stage.bgm')}>
               <AssetPicker
                 kind="bgm"
                 value={frame.bgm}
@@ -229,7 +241,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                 compact
               />
             </Field>
-            <Field label="环境音效">
+            <Field label={t('inspector.stage.sfx')}>
               <AssetPicker
                 kind="sfx"
                 value={frame.sfx}
@@ -240,24 +252,28 @@ function LineEditor({ frame }: { frame: LineFrame }) {
           </div>
           <div className="flex items-center justify-between rounded-md border border-border/60 bg-raised/30 px-2.5 py-2">
             <div>
-              <p className="text-xs text-foreground/85">震屏</p>
-              <p className="text-[10px] text-muted-foreground/50">配合冲击性台词使用</p>
+              <p className="text-xs text-foreground/85">{t('inspector.stage.shake')}</p>
+              <p className="text-[10px] text-muted-foreground/50">
+                {t('inspector.stage.shakeHint')}
+              </p>
             </div>
             <Switch
               checked={frame.shake}
               onCheckedChange={(v) => patchFrame(frame.id, { shake: v })}
-              label="震屏"
+              label={t('inspector.stage.shake')}
             />
           </div>
         </div>
       </Section>
 
       <Section
-        title="立绘"
-        action={<span className="text-[10px] text-muted-foreground/40">说话的角色会被提亮</span>}
+        title={t('inspector.section.cast')}
+        action={
+          <span className="text-[10px] text-muted-foreground/40">{t('inspector.cast.hint')}</span>
+        }
       >
         <div className="space-y-2">
-          {SLOT_LABELS.map(({ slot, label }) => {
+          {SLOT_LABELS.map(({ slot, labelKey }) => {
             const cast = frame.cast[slot]
             const castChar = project.characters.find((c) => c.id === cast?.characterId) ?? null
             const expressions = castChar
@@ -267,7 +283,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
               <div key={slot} className="rounded-md border border-border/50 bg-raised/20 p-1.5">
                 <div className="flex items-center gap-1.5">
                   <span className="w-4 shrink-0 text-center font-mono text-[10px] text-muted-foreground/45">
-                    {label}
+                    {t(labelKey)}
                   </span>
                   <Select
                     value={cast?.characterId ?? ''}
@@ -307,9 +323,9 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                       next[slot] = { ...cast, expression: e.target.value }
                       patchFrame(frame.id, { cast: next })
                     }}
-                    className="h-8 w-[92px] text-xs"
+                    className="h-8 w-[110px] text-xs"
                   >
-                    <option value="">表情</option>
+                    <option value="">{t('inspector.cast.expression')}</option>
                     {expressions.map((expr) => (
                       <option key={expr} value={expr}>
                         {expr}
@@ -319,7 +335,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                   {cast ? (
                     <button
                       className="shrink-0 rounded p-1 text-muted-foreground/40 hover:text-destruct"
-                      title="移除"
+                      title={t('common.remove')}
                       onClick={() =>
                         patchFrame(frame.id, {
                           cast: { ...frame.cast, [slot]: null } as LineFrame['cast'],
@@ -337,7 +353,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                   <div className="mt-1.5 space-y-1 border-t border-border/40 pt-1.5">
                     <TransformSlider
                       icon={<Scaling className="h-3 w-3" />}
-                      label="缩放"
+                      label={t('inspector.transform.scale')}
                       unit="%"
                       value={cast.transform.scale}
                       limits={TRANSFORM_LIMITS.scale}
@@ -345,7 +361,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                     />
                     <TransformSlider
                       icon={<MoveHorizontal className="h-3 w-3" />}
-                      label="横向"
+                      label={t('inspector.transform.x')}
                       unit="px"
                       value={cast.transform.offsetX}
                       limits={TRANSFORM_LIMITS.offsetX}
@@ -353,7 +369,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                     />
                     <TransformSlider
                       icon={<MoveVertical className="h-3 w-3" />}
-                      label="纵向"
+                      label={t('inspector.transform.y')}
                       unit="px"
                       value={cast.transform.offsetY}
                       limits={TRANSFORM_LIMITS.offsetY}
@@ -361,11 +377,11 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                     />
                     <button
                       className="flex items-center gap-1 text-[10px] text-muted-foreground/45 transition-colors hover:text-primary"
-                      title="缩放与偏移恢复默认"
+                      title={t('inspector.transform.resetTip')}
                       onClick={() => setTransform(slot, { ...DEFAULT_TRANSFORM }, 'reset')}
                     >
                       <RotateCcw className="h-2.5 w-2.5" />
-                      复位摆放
+                      {t('inspector.transform.reset')}
                     </button>
                   </div>
                 ) : null}
@@ -374,13 +390,13 @@ function LineEditor({ frame }: { frame: LineFrame }) {
           })}
           {project.characters.length === 0 ? (
             <p className="rounded border border-dashed border-border/60 px-2 py-2 text-[11px] text-muted-foreground/50">
-              还没有角色。左侧「角色」页新建角色并绑定立绘后，这里就能安排站位。
+              {t('inspector.cast.noCharacters')}
             </p>
           ) : null}
         </div>
       </Section>
 
-      <Section title="语音">
+      <Section title={t('inspector.section.voice')}>
         <AssetPicker
           kind="voice"
           value={frame.voice}
@@ -388,7 +404,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
         />
         <p className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground/45">
           <Volume2 className="h-3 w-3" />
-          自动播放模式下会等语音播完再翻页
+          {t('inspector.voice.hint')}
         </p>
       </Section>
     </div>
@@ -399,24 +415,25 @@ function LineEditor({ frame }: { frame: LineFrame }) {
 
 function ChoiceEditor({ frame }: { frame: import('@/lib/types').ChoiceFrame }) {
   const { project, patchFrame } = useEditor()
+  const { t } = useI18n()
   const update = (index: number, patch: Partial<(typeof frame.options)[number]>) => {
     const options = frame.options.map((o, i) => (i === index ? { ...o, ...patch } : o))
     patchFrame(frame.id, { options })
   }
   return (
     <div className="divide-y divide-border/40">
-      <Section title="选择">
-        <Field label="提示语（可留空）">
+      <Section title={t('inspector.section.choice')}>
+        <Field label={t('inspector.choice.prompt')}>
           <Input
             value={frame.prompt}
-            placeholder="例如：风停了，你要怎么做？"
+            placeholder={t('inspector.choice.promptPlaceholder')}
             onChange={(e) => patchFrame(frame.id, { prompt: e.target.value })}
           />
         </Field>
       </Section>
 
       <Section
-        title={`选项 · ${frame.options.length}`}
+        title={t('inspector.choice.options', { n: frame.options.length })}
         action={
           <Button
             variant="ghost"
@@ -437,7 +454,7 @@ function ChoiceEditor({ frame }: { frame: import('@/lib/types').ChoiceFrame }) {
             }
           >
             <Plus className="h-3 w-3" />
-            添加
+            {t('common.add')}
           </Button>
         }
       >
@@ -450,13 +467,13 @@ function ChoiceEditor({ frame }: { frame: import('@/lib/types').ChoiceFrame }) {
                 </span>
                 <Input
                   value={option.text}
-                  placeholder="选项文案"
+                  placeholder={t('inspector.choice.optionPlaceholder')}
                   onChange={(e) => update(index, { text: e.target.value })}
                   className="h-8 text-xs"
                 />
                 <button
                   className="shrink-0 rounded p-1 text-muted-foreground/40 hover:text-destruct"
-                  title="删除选项"
+                  title={t('inspector.choice.deleteOption')}
                   onClick={() =>
                     patchFrame(frame.id, { options: frame.options.filter((_, i) => i !== index) })
                   }
@@ -472,10 +489,10 @@ function ChoiceEditor({ frame }: { frame: import('@/lib/types').ChoiceFrame }) {
                   onChange={(e) => update(index, { target: e.target.value || null })}
                   className="h-7 flex-1 text-[11px]"
                 >
-                  <option value="">顺着本场景继续</option>
+                  <option value="">{t('inspector.choice.continue')}</option>
                   {project.scenes.map((s) => (
                     <option key={s.id} value={s.id}>
-                      跳转到 · {s.name}
+                      {t('inspector.choice.jumpTo', { name: s.name })}
                     </option>
                   ))}
                 </Select>
@@ -484,7 +501,7 @@ function ChoiceEditor({ frame }: { frame: import('@/lib/types').ChoiceFrame }) {
               <div className="mt-1.5 space-y-1">
                 {Object.entries(option.setFlags).map(([key, value]) => (
                   <div key={key} className="flex items-center gap-1">
-                    <Chip tone="primary">标记</Chip>
+                    <Chip tone="primary">{t('inspector.choice.flag')}</Chip>
                     <Input value={key} readOnly className="h-7 w-[92px] text-[11px] text-primary" />
                     <span className="text-[10px] text-muted-foreground/40">=</span>
                     <Input
@@ -522,11 +539,14 @@ function ChoiceEditor({ frame }: { frame: import('@/lib/types').ChoiceFrame }) {
 
 function FlagAdder({ onAdd }: { onAdd: (key: string, value: string) => void }) {
   const { project } = useEditor()
+  const { t } = useI18n()
   return (
     <div className="flex flex-wrap items-center gap-1 pt-0.5">
-      <span className="text-[10px] text-muted-foreground/40">写入标记：</span>
+      <span className="text-[10px] text-muted-foreground/40">{t('inspector.choice.writeFlag')}</span>
       {project.flags.length === 0 ? (
-        <span className="text-[10px] text-muted-foreground/30">先在「项目设置」里声明标记</span>
+        <span className="text-[10px] text-muted-foreground/30">
+          {t('inspector.choice.noFlags')}
+        </span>
       ) : (
         project.flags.map((f) => (
           <button
@@ -546,16 +566,17 @@ function FlagAdder({ onAdd }: { onAdd: (key: string, value: string) => void }) {
 
 function JumpEditor({ frame }: { frame: JumpFrame }) {
   const { project, patchFrame } = useEditor()
+  const { t } = useI18n()
   return (
     <div className="divide-y divide-border/40">
-      <Section title="跳转">
+      <Section title={t('inspector.section.jump')}>
         <div className="space-y-3">
-          <Field label="目标场景" hint="条件不满足时会顺延到下一帧，可用作「条件分支」">
+          <Field label={t('inspector.jump.target')} hint={t('inspector.jump.targetHint')}>
             <Select
               value={frame.target ?? ''}
               onChange={(e) => patchFrame(frame.id, { target: e.target.value || null })}
             >
-              <option value="">不跳转（继续下一帧）</option>
+              <option value="">{t('inspector.jump.none')}</option>
               {project.scenes.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -566,7 +587,7 @@ function JumpEditor({ frame }: { frame: JumpFrame }) {
           <ConditionEditor
             value={frame.requires}
             onChange={(cond) => patchFrame(frame.id, { requires: cond })}
-            label="触发条件"
+            label={t('inspector.jump.condition')}
           />
         </div>
       </Section>
@@ -578,42 +599,43 @@ function JumpEditor({ frame }: { frame: JumpFrame }) {
 
 function EndEditor({ frame: endFrame }: { frame: import('@/lib/types').EndFrame }) {
   const { project, patchFrame } = useEditor()
+  const { t } = useI18n()
   return (
     <div className="divide-y divide-border/40">
-      <Section title="结束">
+      <Section title={t('inspector.section.end')}>
         <div className="space-y-3">
-          <Field label="类型">
+          <Field label={t('inspector.end.type')}>
             <Segmented
               value={endFrame.kind}
               options={[
-                { value: 'chapter', label: '本章结束' },
-                { value: 'ending', label: '结局' },
+                { value: 'chapter', label: t('inspector.end.chapter') },
+                { value: 'ending', label: t('inspector.end.ending') },
               ]}
               onChange={(v) => patchFrame(endFrame.id, { kind: v })}
               className="w-full [&>button]:flex-1"
             />
           </Field>
-          <Field label="标题">
+          <Field label={t('inspector.end.title')}>
             <Input
               value={endFrame.title}
               onChange={(e) => patchFrame(endFrame.id, { title: e.target.value })}
             />
           </Field>
-          <Field label="副标题 / 结语">
+          <Field label={t('inspector.end.subtitle')}>
             <Textarea
               rows={3}
               value={endFrame.subtitle}
-              placeholder="可以用换行写成两行诗"
+              placeholder={t('inspector.end.subtitlePlaceholder')}
               onChange={(e) => patchFrame(endFrame.id, { subtitle: e.target.value })}
               className="text-[13px]"
             />
           </Field>
-          <Field label="之后前往" hint="留空则显示「回到标题 / 再来一次」">
+          <Field label={t('inspector.end.next')} hint={t('inspector.end.nextHint')}>
             <Select
               value={endFrame.next ?? ''}
               onChange={(e) => patchFrame(endFrame.id, { next: e.target.value || null })}
             >
-              <option value="">结束本作</option>
+              <option value="">{t('inspector.end.finish')}</option>
               {project.scenes.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -700,6 +722,7 @@ export function ConditionEditor({
   label?: string
 }) {
   const { project } = useEditor()
+  const { t } = useI18n()
   if (!value) {
     return (
       <div>
@@ -713,7 +736,7 @@ export function ConditionEditor({
           }
         >
           <Plus className="h-3 w-3" />
-          添加条件
+          {t('inspector.condition.add')}
         </Button>
       </div>
     )
@@ -727,7 +750,7 @@ export function ConditionEditor({
           list="galastar-flag-keys"
           onChange={(e) => onChange({ ...value, key: e.target.value })}
           className="h-8 flex-1 text-[11px]"
-          placeholder="标记名"
+          placeholder={t('inspector.condition.keyPlaceholder')}
         />
         <Select
           value={value.op}
@@ -744,12 +767,12 @@ export function ConditionEditor({
           value={value.value}
           onChange={(e) => onChange({ ...value, value: e.target.value })}
           className="h-8 w-[76px] text-[11px]"
-          placeholder="值"
+          placeholder={t('inspector.condition.valuePlaceholder')}
         />
         <button
           className="shrink-0 rounded p-1 text-muted-foreground/40 hover:text-destruct"
           onClick={() => onChange(null)}
-          title="移除条件"
+          title={t('inspector.condition.remove')}
         >
           <X className="h-3 w-3" />
         </button>

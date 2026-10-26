@@ -18,16 +18,25 @@ export function formatDate(ts: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function relativeTime(ts: number): string {
+/**
+ * 相对时间的「数值」，文案交给调用方翻译：
+ * 逻辑在 lib 里，语言在 i18n 里，两边都不必知道对方。
+ */
+export type TimeAgo =
+  | { unit: 'now' }
+  | { unit: 'minute' | 'hour' | 'day'; n: number }
+  | { unit: 'date' }
+
+export function timeAgo(ts: number): TimeAgo {
   const diff = Date.now() - ts
   const minute = 60_000
   const hour = 60 * minute
   const day = 24 * hour
-  if (diff < minute) return '刚刚'
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`
-  if (diff < day * 7) return `${Math.floor(diff / day)} 天前`
-  return formatDate(ts)
+  if (diff < minute) return { unit: 'now' }
+  if (diff < hour) return { unit: 'minute', n: Math.floor(diff / minute) }
+  if (diff < day) return { unit: 'hour', n: Math.floor(diff / hour) }
+  if (diff < day * 7) return { unit: 'day', n: Math.floor(diff / day) }
+  return { unit: 'date' }
 }
 
 export function formatBytes(bytes: number): string {

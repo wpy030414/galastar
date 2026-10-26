@@ -34,6 +34,8 @@ export default {
           DEFAULT: 'hsl(var(--star) / <alpha-value>)',
           foreground: 'hsl(var(--star-foreground) / <alpha-value>)',
         },
+        success: 'hsl(var(--success) / <alpha-value>)',
+        info: 'hsl(var(--info) / <alpha-value>)',
         panel: 'hsl(var(--panel) / <alpha-value>)',
         raised: 'hsl(var(--raised) / <alpha-value>)',
       },

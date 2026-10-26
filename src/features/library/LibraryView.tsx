@@ -12,7 +12,8 @@ import {
   writeProject,
 } from '@/lib/db'
 import { importProjectFile } from '@/lib/pack'
-import { cn, formatDate, relativeTime, uid } from '@/lib/utils'
+import { formatDate, timeAgo, uid } from '@/lib/utils'
+import { useI18n, type I18n } from '@/i18n'
 import { Button, Dialog, EmptyState, Field, Input, Menu, MenuItem, useToast } from '@/components/ui'
 
 export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
@@ -25,6 +26,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   const [covers, setCovers] = useState<Record<string, string>>({})
   const inputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
+  const { t, locale } = useI18n()
 
   const reload = useCallback(async () => {
     setProjects(await listProjects())
@@ -85,7 +87,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   }
 
   const createNew = async () => {
-    const project = createProject(name.trim() || '未命名作品', author.trim())
+    const project = createProject(name.trim(), author.trim(), locale)
     await writeProject(project)
     closeCreate()
     onOpen(project.meta.id)
@@ -94,16 +96,16 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   const handleImport = async (file: File) => {
     setImporting(true)
     try {
-      const { project, files } = await importProjectFile(file)
+      const { project, files } = await importProjectFile(file, locale)
       const clash = await readProject(project.meta.id)
       if (clash) project.meta.id = uid('p')
       for (const item of files) await putBlob(project.meta.id, item.assetId, item.blob)
       project.meta.updatedAt = Date.now()
       await writeProject(project)
       await reload()
-      toast(`已导入《${project.meta.name}》`, 'success')
+      toast(t('library.toast.imported', { name: project.meta.name }), 'success')
     } catch (error) {
-      toast(error instanceof Error ? error.message : '导入失败', 'error')
+      toast(error instanceof Error ? error.message : t('library.toast.importFailed'), 'error')
     } finally {
       setImporting(false)
     }
@@ -112,7 +114,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   const duplicate = async (source: Project) => {
     const copy = structuredClone(source)
     copy.meta.id = uid('p')
-    copy.meta.name = `${source.meta.name} 副本`
+    copy.meta.name = t('library.copySuffix', { name: source.meta.name })
     copy.meta.createdAt = Date.now()
     copy.meta.updatedAt = Date.now()
     const blobs = await getProjectBlobs(source.meta.id)
@@ -122,7 +124,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
       if (blob) await putBlob(copy.meta.id, asset.id, blob)
     }
     await reload()
-    toast('已复制作品', 'success')
+    toast(t('library.toast.duplicated'), 'success')
   }
 
   const confirmDelete = async () => {
@@ -130,7 +132,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
     await removeProject(pendingDelete.meta.id)
     setPendingDelete(null)
     await reload()
-    toast('作品已删除')
+    toast(t('library.toast.deleted'))
   }
 
   return (
@@ -149,22 +151,24 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
               <span className="text-[11px] font-medium tracking-[0.32em] text-muted-foreground/70">
                 GALASTAR
               </span>
-              <span className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] text-muted-foreground/60">
+              <span className="rounded-full border border-border/70 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-muted-foreground/60">
                 v{__APP_VERSION__}
               </span>
               <a
                 href="https://github.com/wpy030414/galastar"
                 target="_blank"
                 rel="noreferrer"
-                title="在 GitHub 上查看项目"
-                aria-label="在 GitHub 上查看项目"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/50 transition-colors hover:bg-white/[0.06] hover:text-foreground"
+                title={t('library.github')}
+                aria-label={t('library.github')}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/50 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
               >
                 <GitHubMark className="h-3.5 w-3.5" />
               </a>
             </div>
             <h1 className="text-[38px] font-semibold leading-tight tracking-tight">
-              把故事放进<span className="text-primary">星空</span>里
+              {t('library.hero.before')}
+              <span className="text-primary">{t('library.hero.highlight')}</span>
+              {t('library.hero.after')}
             </h1>
           </div>
 
@@ -190,21 +194,25 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
               ) : (
                 <Upload className="h-3.5 w-3.5" />
               )}
-              导入工程
+              {t('library.import')}
             </Button>
             <Button variant="primary" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4" />
-              新建作品
+              {t('library.new')}
             </Button>
           </div>
         </header>
 
         <div className="mt-10 border-b border-border/50 pb-3">
           <div className="flex items-baseline gap-3">
-            <h2 className="text-[13px] font-medium tracking-wide text-foreground/80">我的作品</h2>
+            <h2 className="text-[13px] font-medium tracking-wide text-foreground/80">{t('library.mine')}</h2>
             <span className="font-mono text-[11px] text-muted-foreground/50">
-              {projects?.length ?? 0} 部 · {totals.scenes} 幕 · {totals.frames} 帧 · {totals.assets}{' '}
-              素材
+              {t('library.stats', {
+                works: projects?.length ?? 0,
+                scenes: totals.scenes,
+                frames: totals.frames,
+                assets: totals.assets,
+              })}
             </span>
           </div>
         </div>
@@ -212,19 +220,18 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
         {projects === null ? (
           <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            正在读取本地作品…
+            {t('library.loading')}
           </div>
         ) : projects.length === 0 ? (
           <div className="mt-6 flex min-h-[52vh] items-center justify-center">
             <EmptyState
               icon={<Sparkles className="h-8 w-8" />}
-              title="还没有作品"
-              hint="点右上角「新建作品」写下第一幕，或导入一份已有的工程包。"
+              title={t('library.empty.title')}
+              hint={t('library.empty.hint')}
             />
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <NewCard onClick={() => setCreateOpen(true)} />
             {projects.map((project) => (
               <ProjectCard
                 key={project.meta.id}
@@ -242,35 +249,35 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
       <Dialog
         open={createOpen}
         onClose={closeCreate}
-        title="新建作品"
-        description="之后可以随时在项目设置里修改。"
+        title={t('library.create.title')}
+        description={t('library.create.description')}
         footer={
           <>
             <Button variant="ghost" onClick={closeCreate}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button variant="primary" onClick={() => void createNew()}>
-              创建并开始
+              {t('library.create.submit')}
             </Button>
           </>
         }
       >
         <div className="space-y-3">
-          <Field label="作品名">
+          <Field label={t('library.field.name')}>
             <Input
               autoFocus
               value={name}
-              placeholder="例如：星のかけら"
+              placeholder={t('library.field.namePlaceholder')}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') void createNew()
               }}
             />
           </Field>
-          <Field label="作者">
+          <Field label={t('library.field.author')}>
             <Input
               value={author}
-              placeholder="署名，可留空"
+              placeholder={t('library.field.authorPlaceholder')}
               onChange={(e) => setAuthor(e.target.value)}
             />
           </Field>
@@ -280,25 +287,28 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
       <Dialog
         open={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
-        title="删除作品"
-        description="该操作会同时清除作品的剧本与全部素材，无法撤销。建议先导出工程备份。"
+        title={t('library.delete.title')}
+        description={t('library.delete.description')}
         footer={
           <>
             <Button variant="ghost" onClick={() => setPendingDelete(null)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={() => void confirmDelete()}>
               <Trash2 className="h-3.5 w-3.5" />
-              确认删除
+              {t('library.delete.confirm')}
             </Button>
           </>
         }
       >
         <p className="text-sm text-foreground/80">
-          确定删除《{pendingDelete?.meta.name}》吗？
+          {t('library.delete.prompt', { name: pendingDelete?.meta.name ?? '' })}
           <span className="mt-1 block text-xs text-muted-foreground">
             {pendingDelete
-              ? `${pendingDelete.scenes.length} 个场景 · ${pendingDelete.assets.length} 个素材`
+              ? t('library.delete.meta', {
+                  scenes: pendingDelete.scenes.length,
+                  assets: pendingDelete.assets.length,
+                })
               : ''}
           </span>
         </p>
@@ -321,6 +331,8 @@ function ProjectCard({
   onDelete: () => void
 }) {
   const summary = summarize(project)
+  const i18n = useI18n()
+  const { t } = i18n
   const hue = useMemo(() => hashHue(project.meta.id), [project.meta.id])
   const initial = project.meta.name.trim().slice(0, 1) || 'G'
 
@@ -355,17 +367,17 @@ function ProjectCard({
           </span>
           <div className="absolute bottom-3 right-3 flex gap-1">
             <span className="rounded border border-white/15 bg-black/40 px-1.5 py-0.5 text-[10px] text-white/70 backdrop-blur">
-              {summary.sceneCount} 幕
+              {t('library.card.scenes', { n: summary.sceneCount })}
             </span>
             <span className="rounded border border-white/15 bg-black/40 px-1.5 py-0.5 text-[10px] text-white/70 backdrop-blur">
-              {summary.frameCount} 帧
+              {t('library.card.frames', { n: summary.frameCount })}
             </span>
           </div>
         </div>
         <div className="px-4 py-3">
           <p className="truncate text-[14.5px] font-medium text-foreground">{project.meta.name}</p>
           <p className="mt-1 truncate text-[11px] text-muted-foreground/60">
-            {project.meta.author || '未署名'} · {relativeTime(project.meta.updatedAt)}
+            {project.meta.author || t('library.authorFallback')} · {agoLabel(project.meta.updatedAt, i18n)}
           </p>
         </div>
       </button>
@@ -375,7 +387,7 @@ function ProjectCard({
           trigger={
             <button
               className="rounded-md border border-white/10 bg-black/45 p-1.5 text-white/70 backdrop-blur transition-colors hover:text-white"
-              aria-label="作品操作"
+              aria-label={t('library.cardMenu')}
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
@@ -390,7 +402,7 @@ function ProjectCard({
                   close()
                 }}
               >
-                创建副本
+                {t('library.duplicate')}
               </MenuItem>
               <MenuItem
                 danger
@@ -400,33 +412,16 @@ function ProjectCard({
                   close()
                 }}
               >
-                删除作品
+                {t('library.delete.title')}
               </MenuItem>
               <div className="mt-1 border-t border-border/60 px-2.5 pb-1 pt-1.5 font-mono text-[9px] text-muted-foreground/40">
-                更新于 {formatDate(project.meta.updatedAt)}
+                {t('library.updatedAt', { time: formatDate(project.meta.updatedAt) })}
               </div>
             </>
           )}
         </Menu>
       </div>
     </div>
-  )
-}
-
-function NewCard({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 text-muted-foreground/60 transition-all',
-        'hover:border-primary/50 hover:bg-primary/[0.04] hover:text-primary',
-      )}
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-current/30">
-        <Plus className="h-4 w-4" />
-      </span>
-      <span className="text-[12px]">新建作品</span>
-    </button>
   )
 }
 
@@ -450,6 +445,15 @@ function GitHubMark({ className }: { className?: string }) {
       <path d="M12 .5C5.73.5.99 5.24.99 11.51c0 4.86 3.15 8.98 7.53 10.43.55.1.75-.24.75-.53v-2.05c-3.06.66-3.71-1.29-3.71-1.29-.5-1.27-1.22-1.61-1.22-1.61-.99-.68.08-.67.08-.67 1.1.08 1.68 1.13 1.68 1.13.98 1.68 2.57 1.2 3.2.92.1-.71.38-1.2.7-1.47-2.44-.28-5-1.22-5-5.42 0-1.2.43-2.18 1.13-2.95-.11-.28-.49-1.4.11-2.92 0 0 .92-.29 3.01 1.12a10.4 10.4 0 0 1 2.74-.37c.93 0 1.87.13 2.74.37 2.09-1.41 3.01-1.12 3.01-1.12.6 1.52.22 2.64.11 2.92.7.77 1.13 1.75 1.13 2.95 0 4.21-2.57 5.14-5.02 5.41.39.34.75 1.01.75 2.04v3.03c0 .29.2.64.76.53a11.02 11.02 0 0 0 7.51-10.43C23.01 5.24 18.27.5 12 .5Z" />
     </svg>
   )
+}
+
+/** 「刚刚 / N 分钟前」的文案由 i18n 提供；超过一周就直接显示日期 */
+function agoLabel(ts: number, { t }: I18n): string {
+  const ago = timeAgo(ts)
+  if (ago.unit === 'date') return formatDate(ts)
+  if (ago.unit === 'now') return t('time.justNow')
+  const keys = { minute: 'time.minutes', hour: 'time.hours', day: 'time.days' } as const
+  return t(keys[ago.unit], { n: ago.n })
 }
 
 function hashHue(seed: string): number {

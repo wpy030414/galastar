@@ -1,12 +1,27 @@
 import { useState } from 'react'
 import { Check, Download, FileArchive, Globe, Loader2, Package } from 'lucide-react'
 import { useEditor } from '@/store/editor'
-import { archiveFileName, exportPlayableZip, exportProjectArchive, zipFileName } from '@/lib/pack'
+import { useI18n, type MessageKey } from '@/i18n'
+import {
+  archiveFileName,
+  exportPlayableZip,
+  exportProjectArchive,
+  zipFileName,
+  type PackStage,
+} from '@/lib/pack'
 import { downloadBlob, formatBytes } from '@/lib/utils'
 import { Button, Dialog, useToast } from '@/components/ui'
 
+const STAGE_KEYS: Record<PackStage, MessageKey> = {
+  player: 'pack.progress.player',
+  assets: 'pack.progress.assets',
+  zip: 'pack.progress.zip',
+  done: 'pack.progress.done',
+}
+
 export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { project } = useEditor()
+  const { t } = useI18n()
   const toast = useToast()
   const [busy, setBusy] = useState<'web' | 'archive' | null>(null)
   const [progress, setProgress] = useState(0)
@@ -20,24 +35,24 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
     setResult(null)
     setProgress(0)
     try {
-      const onProgress = (msg: string, ratio: number) => {
-        setMessage(msg)
+      const onProgress = (stage: PackStage, ratio: number) => {
+        setMessage(t(STAGE_KEYS[stage]))
         setProgress(ratio)
       }
       if (kind === 'web') {
         const blob = await exportPlayableZip(project, onProgress)
         const name = zipFileName(project)
         downloadBlob(blob, name)
-        setResult({ label: '可游玩 Web Zip', name, size: blob.size })
+        setResult({ label: t('export.result.web'), name, size: blob.size })
       } else {
         const blob = await exportProjectArchive(project, onProgress)
         const name = archiveFileName(project)
         downloadBlob(blob, name)
-        setResult({ label: '工程备份包', name, size: blob.size })
+        setResult({ label: t('export.result.archive'), name, size: blob.size })
       }
-      toast('打包完成，已开始下载', 'success')
+      toast(t('export.toast.done'), 'success')
     } catch (error) {
-      toast(error instanceof Error ? error.message : '打包失败', 'error')
+      toast(error instanceof Error ? error.message : t('export.toast.failed'), 'error')
     } finally {
       setBusy(null)
     }
@@ -47,12 +62,12 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
     <Dialog
       open={open}
       onClose={onClose}
-      title="打包作品"
-      description="生成的文件完全离线运行，解压后双击 start.html 即可游玩。"
+      title={t('export.title')}
+      description={t('export.description')}
       width="max-w-2xl"
       footer={
         <Button variant="ghost" onClick={onClose}>
-          关闭
+          {t('common.close')}
         </Button>
       }
     >
@@ -60,10 +75,13 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
         <div className="grid gap-3 sm:grid-cols-2">
           <ExportCard
             icon={<Globe className="h-4 w-4" />}
-            title="Web 作品包"
-            description="玩家拿到的最终产物：start.html + 播放器 + 素材。双击即玩，无需联网。"
-            meta={`${project.assets.length} 个素材 · 约 ${formatBytes(totalSize)}`}
-            button="打包并下载"
+            title={t('export.web.title')}
+            description={t('export.web.desc')}
+            meta={t('export.web.meta', {
+              n: project.assets.length,
+              size: formatBytes(totalSize),
+            })}
+            button={t('export.web.button')}
             busy={busy === 'web'}
             disabled={busy !== null}
             primary
@@ -71,10 +89,10 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
           />
           <ExportCard
             icon={<FileArchive className="h-4 w-4" />}
-            title="工程备份包"
-            description="含 project.json 与全部素材，用于换设备继续编辑或备份存档。"
-            meta=".galastar"
-            button="导出工程"
+            title={t('export.archive.title')}
+            description={t('export.archive.desc')}
+            meta={t('export.archive.meta')}
+            button={t('export.archive.button')}
             busy={busy === 'archive'}
             disabled={busy !== null}
             onClick={() => void run('archive')}
@@ -86,7 +104,7 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
             <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                {message || '准备中…'}
+                {message || t('export.preparing')}
               </span>
               <span className="font-mono">{Math.round(progress * 100)}%</span>
             </div>
@@ -100,22 +118,24 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
         ) : null}
 
         {result ? (
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/[0.07] p-3 text-[12px] text-emerald-300">
+          <div className="flex items-center gap-2 rounded-lg border border-success/25 bg-success/[0.07] p-3 text-[12px] text-success">
             <Check className="h-3.5 w-3.5" />
-            {result.label}已生成：{result.name}（{formatBytes(result.size)}）
+            {t('export.result.generated', {
+              label: result.label,
+              name: result.name,
+              size: formatBytes(result.size),
+            })}
           </div>
         ) : null}
 
-        <div className="rounded-lg border border-border/60 bg-black/20 p-3">
+        <div className="rounded-lg border border-border/60 bg-foreground/[0.04] p-3">
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
             <Package className="h-3 w-3" />
-            压缩包结构
+            {t('export.structure')}
           </div>
-          <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-muted-foreground/70">{`start.html        ← 双击打开
-galastar.js       ← 播放器运行时（与编辑器预览同一份代码）
-galastar.css
-data.js           ← 剧本与素材索引（script 注入，file:// 也能读）
-media/            ← 背景、立绘、音乐、语音、音效`}</pre>
+          <pre className="overflow-x-auto font-mono text-[11px] leading-relaxed text-muted-foreground/70">
+            {t('export.structureBody')}
+          </pre>
         </div>
       </div>
     </Dialog>
@@ -143,6 +163,7 @@ function ExportCard({
   disabled?: boolean
   primary?: boolean
 }) {
+  const { t } = useI18n()
   return (
     <div className="flex flex-col justify-between gap-3 rounded-lg border border-border/70 bg-raised/20 p-3.5">
       <div>
@@ -160,7 +181,7 @@ function ExportCard({
         disabled={disabled}
       >
         {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-        {busy ? '打包中…' : button}
+        {busy ? t('export.busy') : button}
       </Button>
     </div>
   )

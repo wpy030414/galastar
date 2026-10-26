@@ -117,3 +117,18 @@ generateAsync(blob) → <a download> 触发保存
 | 打包     | 全内存构建 zip，几百 MB 的作品会有明显卡顿                                                    |
 | 帧数     | 单幕数百帧无压力；每帧都会整包 `structuredClone`，上万帧时编辑会变慢                          |
 | 兼容     | 目标为现代常青浏览器；导出产物无 polyfill，`file://` 下不支持 `fetch`/modules，已按此约束设计 |
+
+## 7. 编辑器偏好与双语
+
+**偏好**（`src/store/prefs.tsx`）只有两项：主题与语言。它存 `localStorage` 的 `galastar.prefs`，并在首帧之前由 `main.tsx` 同步落到 `<html>` 上——主题写 `class="dark|light"` 与 `color-scheme`，语言写 `lang`。这样刷新时不会先闪一下深色。
+
+**主题**靠 CSS 变量而不是两套样式表：`:root` 是深色，`.light` 只覆盖同名变量。所有界面色——包括工具栏渐变、滚动条、面板投影、星空底纹——都必须走变量或 `bg-foreground/[0.04]` 这类相对色；组件里写死 `hsl(...)` 会在切主题时留下一块不听话的深色。舞台预览区是例外：它是作品的画布，两套主题下都保持暗色。
+
+**语言**分两层，刻意不合并：
+
+| 层       | 存在哪儿                | 谁切换                     | 作用范围                     |
+| -------- | ----------------------- | -------------------------- | ---------------------------- |
+| 编辑器   | `galastar.prefs`        | 首选项                     | 顶栏、左栏、检查器、作品库   |
+| 作品     | `project.meta.locale`   | 项目设置                   | 播放器、标题界面、导出 README |
+
+编辑器词典在 `src/i18n/messages/*.ts`，中文是事实来源，`en` 的类型是 `Record<MessageKey, …>`，漏一条编译不过。`translate()` 是纯函数，所以 `lib/` 里的非组件代码（导入校验、打包 README）也能用。播放器运行时是 classic script，不能 import 词典，自带一份 `STRINGS` 表，语言取自 `payload.meta.locale`，切换时靠 `data-i18n` 节点整批刷新。

@@ -9,6 +9,9 @@
 
 export type AssetKind = 'background' | 'sprite' | 'bgm' | 'sfx' | 'voice'
 
+/** 界面语言。编辑器偏好在首选项里切；作品的播放器语言写在 meta.locale。 */
+export type Locale = 'zh-CN' | 'en'
+
 /** 资产元信息。二进制本体存放在 IndexedDB 的 blobs 表里，按 `${projectId}:${assetId}` 取。 */
 export interface AssetRecord {
   id: string
@@ -182,6 +185,8 @@ export interface ProjectMeta {
     /** 播放器皮肤，决定玩家看到的界面长相 */
     skin: UiSkin
   }
+  /** 播放器与标题界面的语言；导出后玩家看到的就是这一套文案 */
+  locale: Locale
   title: {
     enabled: boolean
     subtitle: string
@@ -226,6 +231,7 @@ export interface RuntimePayload {
     version: string
     accent: string
     skin: UiSkin
+    locale: Locale
     stage: { width: number; height: number }
     title: { enabled: boolean; subtitle: string; background: string | null }
   }

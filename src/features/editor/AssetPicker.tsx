@@ -4,6 +4,7 @@ import { Ban, Check, ChevronDown, Image as ImageIcon, Music, Plus, Upload } from
 import type { AssetKind } from '@/lib/types'
 import { ASSET_META } from '@/lib/assets'
 import { useEditor } from '@/store/editor'
+import { useI18n } from '@/i18n'
 import { cn, formatBytes } from '@/lib/utils'
 import { Button } from '@/components/ui'
 
@@ -55,6 +56,7 @@ export function AssetPicker({
   const current = assets.find((a) => a.id === value) ?? null
   const isImage = kind === 'background' || kind === 'sprite'
   const meta = ASSET_META[kind]
+  const { t } = useI18n()
 
   const place = useCallback(() => {
     const btn = btnRef.current
@@ -118,7 +120,7 @@ export function AssetPicker({
             <Music className="h-3.5 w-3.5 shrink-0 text-primary/70" />
           )
         ) : (
-          <span className="flex h-5 w-8 shrink-0 items-center justify-center rounded bg-white/[0.04] text-muted-foreground/50">
+          <span className="flex h-5 w-8 shrink-0 items-center justify-center rounded bg-foreground/[0.04] text-muted-foreground/50">
             {isImage ? <ImageIcon className="h-3 w-3" /> : <Music className="h-3 w-3" />}
           </span>
         )}
@@ -129,7 +131,7 @@ export function AssetPicker({
             current ? 'text-foreground/90' : 'text-muted-foreground/60',
           )}
         >
-          {current ? current.name : `未选择${meta.label}`}
+          {current ? current.name : t('picker.none', { kind: t(meta.labelKey) })}
         </span>
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
       </button>
@@ -150,12 +152,12 @@ export function AssetPicker({
             >
               <div className="flex items-center justify-between border-b border-border/60 px-2.5 py-2">
                 <span className="text-[11px] font-medium tracking-wide text-muted-foreground">
-                  {meta.label} · {assets.length}
+                  {t(meta.labelKey)} · {assets.length}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="sm" onClick={() => inputRef.current?.click()}>
                     <Upload className="h-3 w-3" />
-                    上传
+                    {t('picker.upload')}
                   </Button>
                   {allowNone ? (
                     <Button
@@ -167,7 +169,7 @@ export function AssetPicker({
                       }}
                     >
                       <Ban className="h-3 w-3" />
-                      清空
+                      {t('picker.clear')}
                     </Button>
                   ) : null}
                 </div>
@@ -189,8 +191,8 @@ export function AssetPicker({
               <div className="max-h-[248px] overflow-y-auto p-2">
                 {assets.length === 0 ? (
                   <div className="px-2 py-6 text-center">
-                    <p className="text-xs text-muted-foreground/70">还没有{meta.label}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground/50">{meta.hint}</p>
+                    <p className="text-xs text-muted-foreground/70">{t('picker.empty', { kind: t(meta.labelKey) })}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground/50">{t(meta.hintKey)}</p>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -198,7 +200,7 @@ export function AssetPicker({
                       onClick={() => inputRef.current?.click()}
                     >
                       <Plus className="h-3 w-3" />
-                      上传{meta.label}
+                      {t('picker.uploadKind')}
                     </Button>
                   </div>
                 ) : isImage ? (
@@ -246,7 +248,7 @@ export function AssetPicker({
                           'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors',
                           value === asset.id
                             ? 'bg-primary/10 text-primary'
-                            : 'text-muted-foreground hover:bg-white/[0.05]',
+                            : 'text-muted-foreground hover:bg-foreground/[0.05]',
                         )}
                       >
                         <Music className="h-3 w-3 shrink-0" />

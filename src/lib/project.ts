@@ -1,3 +1,4 @@
+import { translate } from '@/i18n/dict'
 import {
   DEFAULT_TRANSFORM,
   TRANSFORM_LIMITS,
@@ -10,6 +11,7 @@ import {
   type Frame,
   type JumpFrame,
   type LineFrame,
+  type Locale,
   type Project,
   type ProjectSummary,
   type RuntimeAsset,
@@ -120,8 +122,8 @@ export function createJumpFrame(): JumpFrame {
   return { id: uid('f'), type: 'jump', requires: null, target: null }
 }
 
-export function createEndFrame(): EndFrame {
-  return { id: uid('f'), type: 'end', kind: 'chapter', title: '本章完', subtitle: '', next: null }
+export function createEndFrame(title = ''): EndFrame {
+  return { id: uid('f'), type: 'end', kind: 'chapter', title, subtitle: '', next: null }
 }
 
 export function createOption(): ChoiceOption {
@@ -136,12 +138,16 @@ export function createCharacter(name = '新角色', color = '#9d8cff'): Characte
   return { id: uid('c'), name, color, sprites: {} }
 }
 
-export function createProject(name = '未命名作品', author = ''): Project {
+export function createProject(
+  name?: string,
+  author = '',
+  locale: Locale = 'zh-CN',
+): Project {
   const now = Date.now()
   return {
     meta: {
       id: uid('p'),
-      name,
+      name: name?.trim() || translate(locale, 'common.untitledWork'),
       author,
       description: '',
       version: '1.0.0',
@@ -149,9 +155,10 @@ export function createProject(name = '未命名作品', author = ''): Project {
       updatedAt: now,
       stage: { width: 1280, height: 720 },
       theme: { accent: '#9d8cff', skin: 'pgf' },
+      locale,
       title: { enabled: true, subtitle: '', background: null },
     },
-    scenes: [createScene('第一幕')],
+    scenes: [createScene(translate(locale, 'project.firstScene'))],
     characters: [],
     flags: [],
     assets: [],
@@ -235,6 +242,7 @@ export function buildPayload(
       version: project.meta.version,
       accent: project.meta.theme.accent,
       skin: project.meta.theme.skin,
+      locale: project.meta.locale,
       stage: project.meta.stage,
       title: project.meta.title,
     },
@@ -249,15 +257,21 @@ export function buildPayload(
  * 导入容错：外部文件可能来自旧版本或手工修改
  * ------------------------------------------------------------------ */
 
-export function normalizeProject(raw: unknown): Project {
+export function normalizeProject(raw: unknown, locale: Locale = 'zh-CN'): Project {
   const data = raw as Partial<Project>
   if (!data || typeof data !== 'object' || !data.meta)
-    throw new Error('不是有效的 Galastar 作品文件')
-  const base = createProject(data.meta.name || '导入的作品')
+    throw new Error(translate(locale, 'pack.error.invalidProject'))
+  const projectLocale: Locale = data.meta.locale === 'en' ? 'en' : 'zh-CN'
+  const base = createProject(
+    data.meta.name || translate(projectLocale, 'project.importedWork'),
+    '',
+    projectLocale,
+  )
   const project: Project = {
     meta: {
       ...base.meta,
       ...data.meta,
+      locale: projectLocale,
       stage: { width: 1280, height: 720 },
       theme: {
         accent: data.meta.theme?.accent || '#9d8cff',
@@ -277,7 +291,7 @@ export function normalizeProject(raw: unknown): Project {
   project.scenes = project.scenes.map((scene) => ({
     ...scene,
     id: scene.id || uid('s'),
-    name: scene.name || '未命名场景',
+    name: scene.name || translate(projectLocale, 'common.untitled'),
     frames: (scene.frames || []).map((frame) => normalizeFrame(frame)),
   }))
   return project
