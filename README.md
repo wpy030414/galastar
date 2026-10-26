@@ -27,9 +27,7 @@ pnpm install       # 包管理器只用 pnpm（有 pnpm-lock.yaml）
 pnpm dev           # http://localhost:5173
 ```
 
-不想先跑编辑器？[`samples/galastar-demo-web.zip`](samples/galastar-demo-web.zip) 就是示例作品的打包产物——解压后双击 `start.html`，断网也能玩，可以先看看成品长什么样。
-
-环境：**Node 24**（`.nvmrc` 已钉）+ **pnpm**（有 `pnpm-lock.yaml`，别用 npm/yarn 混装；`pnpm-workspace.yaml` 里固定了 `nodeLinker: hoisted`，原因见 [`docs/DECISIONS.md`](docs/DECISIONS.md) 的 D8）。首次打开会自动生成一部示例作品《星のかけら》，包含 4 幕、2 个角色、一条分支和一个结局，用来对照学习；示例里的立绘是程序生成的剪影占位图，导入自己的 PNG 即可替换。
+环境：**Node 24**（`.nvmrc` 已钉）+ **pnpm**（有 `pnpm-lock.yaml`，别用 npm/yarn 混装；`pnpm-workspace.yaml` 里固定了 `nodeLinker: hoisted`，原因见 [`docs/DECISIONS.md`](docs/DECISIONS.md) 的 D8）。
 
 常用命令：
 
@@ -143,7 +141,6 @@ README.txt        ← 给玩家看的操作说明
 │   ├── runtime.js          classic script，零依赖
 │   ├── runtime.css         舞台样式
 │   └── preview.html        编辑器内嵌预览的桥
-├── samples/                示例作品的打包产物（可直接双击试玩）
 ├── src/
 │   ├── components/ui.tsx   基础组件（按钮 / 表单 / 弹层 / Toast）
 │   ├── features/library/   作品库

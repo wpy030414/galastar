@@ -1,23 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Copy,
-  FileArchive,
-  FolderOpen,
-  Loader2,
-  MoreHorizontal,
-  Plus,
-  Sparkles,
-  Trash2,
-  Upload,
-} from 'lucide-react'
+import { Copy, Loader2, MoreHorizontal, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
 import type { Project } from '@/lib/types'
-import {
-  createDemoProject,
-  createProject,
-  DEMO_FILE_MAP,
-  demoAssetFiles,
-  summarize,
-} from '@/lib/project'
+import { createProject, summarize } from '@/lib/project'
 import {
   getBlob,
   getProjectBlobs,
@@ -27,46 +11,9 @@ import {
   removeProject,
   writeProject,
 } from '@/lib/db'
-import { importAssetFile } from '@/lib/assets'
 import { importProjectFile } from '@/lib/pack'
 import { cn, formatDate, relativeTime, uid } from '@/lib/utils'
 import { Button, Dialog, EmptyState, Field, Input, Menu, MenuItem, useToast } from '@/components/ui'
-
-const SEED_FLAG = 'galastar:seeded'
-
-/** 首次访问自动准备一份示例作品，打开就能玩，也能立刻看清编辑器能做什么 */
-let seedLock: Promise<boolean> | null = null
-
-function ensureDemoProject(): Promise<boolean> {
-  if (!seedLock) seedLock = seedDemo()
-  return seedLock
-}
-
-async function seedDemo(): Promise<boolean> {
-  if (localStorage.getItem(SEED_FLAG)) return false
-  const existing = await listProjects()
-  if (existing.length > 0) {
-    localStorage.setItem(SEED_FLAG, '1')
-    return false
-  }
-  const { project, slots } = createDemoProject()
-  const files = demoAssetFiles()
-  for (const item of DEMO_FILE_MAP) {
-    const file = files.find((f) => f.name === item.file)
-    if (!file) continue
-    const record = await importAssetFile(
-      project.meta.id,
-      file,
-      item.kind,
-      project.assets,
-      slots[item.key],
-    )
-    project.assets.push(record)
-  }
-  await writeProject(project)
-  localStorage.setItem(SEED_FLAG, '1')
-  return true
-}
 
 export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   const [projects, setProjects] = useState<Project[] | null>(null)
@@ -74,7 +21,6 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   const [name, setName] = useState('')
   const [author, setAuthor] = useState('')
   const [importing, setImporting] = useState(false)
-  const [seeding, setSeeding] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null)
   const [covers, setCovers] = useState<Record<string, string>>({})
   const inputRef = useRef<HTMLInputElement>(null)
@@ -85,10 +31,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
   }, [])
 
   useEffect(() => {
-    void (async () => {
-      await ensureDemoProject()
-      await reload()
-    })()
+    void reload()
   }, [reload])
 
   /* 用作品标题背景做封面，没有背景就用程序化渐变 */
@@ -134,38 +77,18 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
     )
   }, [projects])
 
-  const createNew = async () => {
-    const project = createProject(name.trim() || '未命名作品', author.trim())
-    await writeProject(project)
+  /* 关闭新建面板时一并清空草稿，取消/按 Esc 之后再打开是干净的 */
+  const closeCreate = () => {
     setCreateOpen(false)
     setName('')
     setAuthor('')
-    onOpen(project.meta.id)
   }
 
-  const loadDemo = async () => {
-    setSeeding(true)
-    try {
-      const { project, slots } = createDemoProject()
-      const files = demoAssetFiles()
-      for (const item of DEMO_FILE_MAP) {
-        const file = files.find((f) => f.name === item.file)
-        if (!file) continue
-        const record = await importAssetFile(
-          project.meta.id,
-          file,
-          item.kind,
-          project.assets,
-          slots[item.key],
-        )
-        project.assets.push(record)
-      }
-      await writeProject(project)
-      await reload()
-      toast('示例作品已创建', 'success')
-    } finally {
-      setSeeding(false)
-    }
+  const createNew = async () => {
+    const project = createProject(name.trim() || '未命名作品', author.trim())
+    await writeProject(project)
+    closeCreate()
+    onOpen(project.meta.id)
   }
 
   const handleImport = async (file: File) => {
@@ -227,17 +150,22 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
                 GALASTAR
               </span>
               <span className="rounded-full border border-border/70 px-2 py-0.5 text-[10px] text-muted-foreground/60">
-                v2.0
+                v{__APP_VERSION__}
               </span>
+              <a
+                href="https://github.com/wpy030414/galastar"
+                target="_blank"
+                rel="noreferrer"
+                title="在 GitHub 上查看项目"
+                aria-label="在 GitHub 上查看项目"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/50 transition-colors hover:bg-white/[0.06] hover:text-foreground"
+              >
+                <GitHubMark className="h-3.5 w-3.5" />
+              </a>
             </div>
             <h1 className="text-[38px] font-semibold leading-tight tracking-tight">
               把故事放进<span className="text-primary">星空</span>里
             </h1>
-            <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-muted-foreground">
-              可视化编排台词、立绘与分支，实时预览，一键打包成可离线游玩的 Web 作品。
-              <br />
-              不需要写一行 JSON。
-            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -271,7 +199,7 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
           </div>
         </header>
 
-        <div className="mt-10 flex items-center justify-between border-b border-border/50 pb-3">
+        <div className="mt-10 border-b border-border/50 pb-3">
           <div className="flex items-baseline gap-3">
             <h2 className="text-[13px] font-medium tracking-wide text-foreground/80">我的作品</h2>
             <span className="font-mono text-[11px] text-muted-foreground/50">
@@ -279,9 +207,6 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
               素材
             </span>
           </div>
-          <span className="hidden text-[11px] text-muted-foreground/40 sm:block">
-            全部数据保存在本机浏览器
-          </span>
         </div>
 
         {projects === null ? (
@@ -290,27 +215,11 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
             正在读取本地作品…
           </div>
         ) : projects.length === 0 ? (
-          <div className="mt-14">
+          <div className="mt-6 flex min-h-[52vh] items-center justify-center">
             <EmptyState
               icon={<Sparkles className="h-8 w-8" />}
               title="还没有作品"
-              hint="从零开始，或者先看看示例作品长什么样。"
-              action={
-                <div className="mt-2 flex gap-2">
-                  <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-4 w-4" />
-                    新建作品
-                  </Button>
-                  <Button variant="secondary" onClick={() => void loadDemo()} disabled={seeding}>
-                    {seeding ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <FolderOpen className="h-3.5 w-3.5" />
-                    )}
-                    载入示例作品
-                  </Button>
-                </div>
-              }
+              hint="点右上角「新建作品」写下第一幕，或导入一份已有的工程包。"
             />
           </div>
         ) : (
@@ -328,24 +237,16 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
             ))}
           </div>
         )}
-
-        <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-5 text-[11px] text-muted-foreground/40">
-          <span>Galastar · Galgame 创作引擎</span>
-          <span className="flex items-center gap-1.5">
-            <FileArchive className="h-3 w-3" />
-            导出产物为纯静态站点，可放到任意静态托管
-          </span>
-        </footer>
       </div>
 
       <Dialog
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={closeCreate}
         title="新建作品"
         description="之后可以随时在项目设置里修改。"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setCreateOpen(false)}>
+            <Button variant="ghost" onClick={closeCreate}>
               取消
             </Button>
             <Button variant="primary" onClick={() => void createNew()}>
@@ -538,6 +439,15 @@ function LogoMark() {
       />
       <circle cx="6" cy="19" r="1.5" fill="hsl(var(--star))" />
       <circle cx="18.5" cy="20" r="1" fill="hsl(var(--star))" opacity=".6" />
+    </svg>
+  )
+}
+
+/* lucide 1.x 移除了品牌图标，GitHub 的 mark 这里内联，避免多引一个包 */
+function GitHubMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path d="M12 .5C5.73.5.99 5.24.99 11.51c0 4.86 3.15 8.98 7.53 10.43.55.1.75-.24.75-.53v-2.05c-3.06.66-3.71-1.29-3.71-1.29-.5-1.27-1.22-1.61-1.22-1.61-.99-.68.08-.67.08-.67 1.1.08 1.68 1.13 1.68 1.13.98 1.68 2.57 1.2 3.2.92.1-.71.38-1.2.7-1.47-2.44-.28-5-1.22-5-5.42 0-1.2.43-2.18 1.13-2.95-.11-.28-.49-1.4.11-2.92 0 0 .92-.29 3.01 1.12a10.4 10.4 0 0 1 2.74-.37c.93 0 1.87.13 2.74.37 2.09-1.41 3.01-1.12 3.01-1.12.6 1.52.22 2.64.11 2.92.7.77 1.13 1.75 1.13 2.95 0 4.21-2.57 5.14-5.02 5.41.39.34.75 1.01.75 2.04v3.03c0 .29.2.64.76.53a11.02 11.02 0 0 0 7.51-10.43C23.01 5.24 18.27.5 12 .5Z" />
     </svg>
   )
 }
