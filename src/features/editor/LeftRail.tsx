@@ -5,6 +5,7 @@ import {
   Clapperboard,
   Image as ImageIcon,
   Layers,
+  Link2,
   MoreHorizontal,
   Plus,
   Trash2,
@@ -21,7 +22,9 @@ import { cn, formatBytes } from '@/lib/utils'
 import {
   Button,
   Chip,
+  Dialog,
   EmptyState,
+  Field,
   Input,
   Menu,
   MenuItem,
@@ -43,8 +46,16 @@ export function LeftRail() {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'script', label: t('rail.tab.script'), icon: <Clapperboard className="h-3.5 w-3.5" /> },
-            { value: 'asset', label: t('rail.tab.asset'), icon: <Layers className="h-3.5 w-3.5" /> },
+            {
+              value: 'script',
+              label: t('rail.tab.script'),
+              icon: <Clapperboard className="h-3.5 w-3.5" />,
+            },
+            {
+              value: 'asset',
+              label: t('rail.tab.asset'),
+              icon: <Layers className="h-3.5 w-3.5" />,
+            },
             { value: 'cast', label: t('rail.tab.cast'), icon: <Users className="h-3.5 w-3.5" /> },
           ]}
         />
@@ -191,10 +202,14 @@ function SceneList() {
 /* --------------------------------- 素材 --------------------------------- */
 
 function AssetLibrary() {
-  const { project, assetUrls, addAssets, removeAsset } = useEditor()
+  const { project, assetUrls, addAssets, addRemoteAsset, removeAsset } = useEditor()
   const { t } = useI18n()
   const [kind, setKind] = useState<AssetKind>('background')
   const [dragging, setDragging] = useState(false)
+  const [urlOpen, setUrlOpen] = useState(false)
+  const [urlDraft, setUrlDraft] = useState('')
+  const [urlName, setUrlName] = useState('')
+  const [urlError, setUrlError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
   const assets = project.assets.filter((a) => a.kind === kind)
@@ -204,6 +219,28 @@ function AssetLibrary() {
     if (!files.length) return
     await addAssets(files, kind)
     toast(t('rail.imported', { n: files.length, kind: t(meta.labelKey) }), 'success')
+  }
+
+  const closeUrlDialog = () => {
+    setUrlOpen(false)
+    setUrlDraft('')
+    setUrlName('')
+    setUrlError('')
+  }
+
+  const submitUrl = () => {
+    const value = urlDraft.trim()
+    if (!/^https?:\/\/\S+$/i.test(value)) {
+      setUrlError(t('rail.urlInvalid'))
+      return
+    }
+    try {
+      addRemoteAsset({ kind, url: value, name: urlName })
+      toast(t('rail.urlAdded', { kind: t(meta.labelKey) }), 'success')
+      closeUrlDialog()
+    } catch (error) {
+      setUrlError(error instanceof Error ? error.message : String(error))
+    }
   }
 
   return (
@@ -259,7 +296,9 @@ function AssetLibrary() {
           )}
         >
           <Upload className="h-4 w-4 text-muted-foreground/60" />
-          <span className="text-[11px] text-muted-foreground">{t('rail.uploadCta', { kind: t(meta.labelKey) })}</span>
+          <span className="text-[11px] text-muted-foreground">
+            {t('rail.uploadCta', { kind: t(meta.labelKey) })}
+          </span>
         </button>
         <input
           ref={inputRef}
@@ -272,6 +311,14 @@ function AssetLibrary() {
             e.target.value = ''
           }}
         />
+        <button
+          type="button"
+          onClick={() => setUrlOpen(true)}
+          className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border/70 py-2 text-[11px] text-muted-foreground transition-colors hover:border-border hover:bg-foreground/[0.03] hover:text-foreground"
+        >
+          <Link2 className="h-3.5 w-3.5" />
+          {t('rail.addByUrl')}
+        </button>
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-1.5 px-2">
@@ -303,9 +350,22 @@ function AssetLibrary() {
                   {asset.name}
                 </p>
                 <p className="font-mono text-[9px] text-muted-foreground/45">
-                  {asset.width ? `${asset.width}×${asset.height}` : formatBytes(asset.size)}
+                  {asset.width
+                    ? `${asset.width}×${asset.height}`
+                    : asset.url
+                      ? t('rail.remote')
+                      : formatBytes(asset.size)}
                 </p>
               </div>
+              {asset.url ? (
+                <span
+                  className="absolute left-1 top-1 flex items-center gap-0.5 rounded bg-black/70 px-1 py-0.5 text-[8px] text-white/80"
+                  title={asset.url}
+                >
+                  <Link2 className="h-2.5 w-2.5" />
+                  {t('rail.remoteBadge')}
+                </span>
+              ) : null}
               <button
                 onClick={() => removeAsset(asset.id)}
                 className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white/70 opacity-0 transition-opacity hover:text-destruct group-hover:opacity-100"
@@ -330,6 +390,53 @@ function AssetLibrary() {
       <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground/45">
         {t('rail.assetHint')}
       </p>
+
+      <Dialog
+        open={urlOpen}
+        onClose={closeUrlDialog}
+        title={t('rail.urlTitle')}
+        description={t('rail.urlDesc')}
+        footer={
+          <>
+            <Button variant="ghost" onClick={closeUrlDialog}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="primary" onClick={submitUrl}>
+              {t('rail.urlSubmit')}
+            </Button>
+          </>
+        }
+      >
+        <div
+          className="space-y-3"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submitUrl()
+          }}
+        >
+          <Field label={t('rail.urlLabel')} hint={t('rail.urlHint')}>
+            <Input
+              autoFocus
+              value={urlDraft}
+              onChange={(e) => {
+                setUrlDraft(e.target.value)
+                setUrlError('')
+              }}
+              placeholder="https://example.com/bg.png"
+            />
+          </Field>
+          <Field label={t('rail.urlNameLabel')}>
+            <Input
+              value={urlName}
+              onChange={(e) => setUrlName(e.target.value)}
+              placeholder={t('rail.urlNamePlaceholder')}
+            />
+          </Field>
+          {urlError ? <p className="text-[11px] text-destruct">{urlError}</p> : null}
+          <p className="text-[11px] leading-relaxed text-muted-foreground/50">
+            {t(meta.labelKey)} · {t(meta.hintKey)}
+          </p>
+        </div>
+      </Dialog>
     </div>
   )
 }

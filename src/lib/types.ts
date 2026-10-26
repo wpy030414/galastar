@@ -12,7 +12,7 @@ export type AssetKind = 'background' | 'sprite' | 'bgm' | 'sfx' | 'voice'
 /** 界面语言。编辑器偏好在首选项里切；作品的播放器语言写在 meta.locale。 */
 export type Locale = 'zh-CN' | 'en'
 
-/** 资产元信息。二进制本体存放在 IndexedDB 的 blobs 表里，按 `${projectId}:${assetId}` 取。 */
+/** 资产元信息。本地素材的二进制存放在 IndexedDB 的 blobs 表里，按 `${projectId}:${assetId}` 取。 */
 export interface AssetRecord {
   id: string
   kind: AssetKind
@@ -25,6 +25,11 @@ export interface AssetRecord {
   width?: number
   height?: number
   createdAt: number
+  /**
+   * 远程素材：直接引用 http(s) 链接，不读取本地 blob，打包时也不复制进 media/。
+   * 有值时播放器与导出产物都用它作为资源地址；没有文件也能通过校验。
+   */
+  url?: string
 }
 
 export type Slot = 'left' | 'center' | 'right'

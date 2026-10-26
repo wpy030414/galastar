@@ -1,0 +1,243 @@
+{
+  "meta": {
+    "id": "p_demo_star",
+    "name": "星之扉",
+    "author": "Galastar",
+    "description": "一个用来验证 Galastar 整条链路的最小作品：标题、立绘、分支与两个结局。",
+    "version": "1.0.0",
+    "createdAt": 1735689600000,
+    "updatedAt": 1735689600000,
+    "stage": {
+      "width": 1280,
+      "height": 720
+    },
+    "theme": {
+      "accent": "#9d8cff",
+      "skin": "pgf"
+    },
+    "locale": "zh-CN",
+    "title": {
+      "enabled": true,
+      "subtitle": "A tiny demo by Galastar",
+      "background": "a_bg_worldend"
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene-hall",
+      "name": "第一幕 · 贵宾席",
+      "frames": [
+        {
+          "id": "line-1",
+          "type": "line",
+          "speaker": {
+            "characterId": "char_linglan",
+            "name": "铃兰"
+          },
+          "text": "爸爸，请入座吧。灯暗了哦——大幕拉开之前，请收好手机。",
+          "bg": "a_bg_worldend",
+          "bgm": null,
+          "sfx": null,
+          "voice": null,
+          "cast": {
+            "left": null,
+            "center": {
+              "characterId": "char_linglan",
+              "expression": "normal",
+              "transform": {
+                "scale": 88,
+                "offsetX": 0,
+                "offsetY": 34
+              }
+            },
+            "right": null
+          },
+          "transition": "fade",
+          "shake": false
+        },
+        {
+          "id": "line-2",
+          "type": "line",
+          "speaker": {
+            "characterId": "char_linglan",
+            "name": "铃兰"
+          },
+          "text": "……不过，今晚的剧本，还没有写完呢。",
+          "bg": "a_bg_worldend",
+          "bgm": null,
+          "sfx": null,
+          "voice": null,
+          "cast": {
+            "left": null,
+            "center": {
+              "characterId": "char_linglan",
+              "expression": "smile",
+              "transform": {
+                "scale": 88,
+                "offsetX": 0,
+                "offsetY": 34
+              }
+            },
+            "right": null
+          },
+          "transition": "cut",
+          "shake": false
+        },
+        {
+          "id": "choice-1",
+          "type": "choice",
+          "prompt": "要怎么回答？",
+          "options": [
+            {
+              "id": "opt-stay",
+              "text": "坐下，听她把话说完",
+              "target": "scene-stay",
+              "setFlags": {
+                "invited": "true"
+              },
+              "requires": null
+            },
+            {
+              "id": "opt-leave",
+              "text": "先离开，把夜晚留给她",
+              "target": "scene-leave",
+              "setFlags": {},
+              "requires": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene-stay",
+      "name": "第二幕 · 幕间",
+      "frames": [
+        {
+          "id": "line-3",
+          "type": "line",
+          "speaker": {
+            "characterId": "char_linglan",
+            "name": "铃兰"
+          },
+          "text": "……等价交换。爸爸的陪伴，我收下了。",
+          "bg": "a_bg_dawn",
+          "bgm": null,
+          "sfx": null,
+          "voice": null,
+          "cast": {
+            "left": null,
+            "center": {
+              "characterId": "char_linglan",
+              "expression": "smile",
+              "transform": {
+                "scale": 88,
+                "offsetX": 0,
+                "offsetY": 34
+              }
+            },
+            "right": null
+          },
+          "transition": "dissolve",
+          "shake": false
+        },
+        {
+          "id": "end-1",
+          "type": "end",
+          "kind": "ending",
+          "title": "结局 · 贵宾席",
+          "subtitle": "灯亮起时，她还坐在那里。",
+          "next": null
+        }
+      ]
+    },
+    {
+      "id": "scene-leave",
+      "name": "第二幕 · 门外",
+      "frames": [
+        {
+          "id": "line-4",
+          "type": "line",
+          "speaker": {
+            "characterId": null,
+            "name": ""
+          },
+          "text": "门在身后合上。舞台的灯，还亮着。",
+          "bg": "a_bg_dawn",
+          "bgm": null,
+          "sfx": null,
+          "voice": null,
+          "cast": {
+            "left": null,
+            "center": null,
+            "right": null
+          },
+          "transition": "fade",
+          "shake": false
+        },
+        {
+          "id": "end-2",
+          "type": "end",
+          "kind": "ending",
+          "title": "结局 · 门外",
+          "subtitle": "有些话，留到下一次演出。",
+          "next": null
+        }
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "id": "char_linglan",
+      "name": "铃兰",
+      "color": "#f0c65a",
+      "sprites": {
+        "normal": "a_sprite_linglan",
+        "smile": "a_sprite_linglan"
+      }
+    }
+  ],
+  "flags": [
+    {
+      "key": "invited",
+      "initial": "false"
+    }
+  ],
+  "assets": [
+    {
+      "id": "a_bg_worldend",
+      "kind": "background",
+      "name": "Avg_bg_76_g13_worldend.png",
+      "fileName": "bg-worldend.png",
+      "mime": "image/png",
+      "size": 0,
+      "width": 1280,
+      "height": 720,
+      "url": "https://media.prts.wiki/8/85/Avg_bg_76_g13_worldend.png",
+      "createdAt": 1735689600000
+    },
+    {
+      "id": "a_bg_dawn",
+      "kind": "background",
+      "name": "Avg_bg_76_g14_worldenddawn.png",
+      "fileName": "bg-worldend-dawn.png",
+      "mime": "image/png",
+      "size": 0,
+      "width": 1280,
+      "height": 720,
+      "url": "https://media.prts.wiki/b/b5/Avg_bg_76_g14_worldenddawn.png",
+      "createdAt": 1735689600000
+    },
+    {
+      "id": "a_sprite_linglan",
+      "kind": "sprite",
+      "name": "立绘_铃兰_1.png",
+      "fileName": "sprite-linglan.png",
+      "mime": "image/png",
+      "size": 0,
+      "width": 1024,
+      "height": 1024,
+      "url": "https://media.prts.wiki/f/f5/%E7%AB%8B%E7%BB%98_%E9%93%83%E5%85%B0_1.png",
+      "createdAt": 1735689600000
+    }
+  ]
+}

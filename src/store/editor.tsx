@@ -19,8 +19,8 @@ import {
 } from '@/lib/project'
 import { deleteBlob, readProject, writeProject } from '@/lib/db'
 import { useI18n } from '@/i18n'
-import { importAssetFile, loadAssetUrls, revokeAssetUrls } from '@/lib/assets'
-import { uid } from '@/lib/utils'
+import { importAssetFile, importRemoteAsset, loadAssetUrls, revokeAssetUrls } from '@/lib/assets'
+import { uid } from '@/lib/pure'
 
 export type PreviewMode = 'edit' | 'play' | 'title'
 
@@ -53,6 +53,8 @@ interface EditorApi {
   moveScene: (id: string, delta: number) => void
 
   addAssets: (files: File[], kind: AssetKind) => Promise<void>
+  /** 登记远程素材：只存 http(s) 链接，不落 blob */
+  addRemoteAsset: (input: { kind: AssetKind; url: string; name?: string }) => AssetRecord
   removeAsset: (id: string) => void
 
   saveNow: () => Promise<void>
@@ -408,13 +410,28 @@ export function EditorProvider({
     [mutate, project],
   )
 
+  const addRemoteAsset = useCallback(
+    (input: { kind: AssetKind; url: string; name?: string }) => {
+      if (!project) throw new Error('addRemoteAsset 需要在已打开的作品里调用')
+      const record = importRemoteAsset(input.kind, input.url, project.assets, input.name)
+      const url = record.url!
+      urlsRef.current = { ...urlsRef.current, [record.id]: url }
+      setAssetUrls((prev) => ({ ...prev, [record.id]: url }))
+      mutate((draft) => {
+        draft.assets.push(record)
+      })
+      return record
+    },
+    [mutate, project],
+  )
+
   const removeAsset = useCallback(
     (id: string) => {
       if (!project) return
       void deleteBlob(project.meta.id, id)
       const url = urlsRef.current[id]
       if (url) {
-        URL.revokeObjectURL(url)
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url)
         const next = { ...urlsRef.current }
         delete next[id]
         urlsRef.current = next
@@ -484,6 +501,7 @@ export function EditorProvider({
       removeScene,
       moveScene,
       addAssets,
+      addRemoteAsset,
       removeAsset,
       saveNow,
       close: () => {
@@ -515,6 +533,7 @@ export function EditorProvider({
     removeScene,
     moveScene,
     addAssets,
+    addRemoteAsset,
     removeAsset,
     saveNow,
     onExit,

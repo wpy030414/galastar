@@ -5,13 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** 短 id，足够在一个作品内保持唯一，也方便肉眼比对 */
-export function uid(prefix = ''): string {
-  const rand = Math.random().toString(36).slice(2, 8)
-  const time = Date.now().toString(36).slice(-4)
-  return `${prefix}${prefix ? '_' : ''}${time}${rand}`
-}
-
 export function formatDate(ts: number): string {
   const d = new Date(ts)
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -60,14 +53,4 @@ export function downloadBlob(blob: Blob, fileName: string) {
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 4000)
-}
-
-/** 把任意标题变成安全的文件名 */
-export function safeFileName(name: string, fallback = 'galastar'): string {
-  const cleaned = (name || '')
-    .trim()
-    .replace(/[\\/:*?"<>|]+/g, '-')
-    .replace(/\s+/g, '-')
-    .slice(0, 60)
-  return cleaned || fallback
 }

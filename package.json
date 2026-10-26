@@ -3,13 +3,17 @@
   "version": "26.10.26",
   "private": true,
   "description": "Galastar — GalGame IDE，一键打包为可离线游玩的 Web 作品",
+  "bin": {
+    "galastar": "./bin/galastar.mjs"
+  },
   "type": "module",
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
     "preview": "vp preview",
     "check": "vp check",
-    "check:fix": "vp check --fix"
+    "check:fix": "vp check --fix",
+    "galastar": "node bin/galastar.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

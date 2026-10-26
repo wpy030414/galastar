@@ -126,9 +126,53 @@ generateAsync(blob) → <a download> 触发保存
 
 **语言**分两层，刻意不合并：
 
-| 层       | 存在哪儿                | 谁切换                     | 作用范围                     |
-| -------- | ----------------------- | -------------------------- | ---------------------------- |
-| 编辑器   | `galastar.prefs`        | 首选项                     | 顶栏、左栏、检查器、作品库   |
-| 作品     | `project.meta.locale`   | 项目设置                   | 播放器、标题界面、导出 README |
+| 层     | 存在哪儿              | 谁切换   | 作用范围                      |
+| ------ | --------------------- | -------- | ----------------------------- |
+| 编辑器 | `galastar.prefs`      | 首选项   | 顶栏、左栏、检查器、作品库    |
+| 作品   | `project.meta.locale` | 项目设置 | 播放器、标题界面、导出 README |
 
 编辑器词典在 `src/i18n/messages/*.ts`，中文是事实来源，`en` 的类型是 `Record<MessageKey, …>`，漏一条编译不过。`translate()` 是纯函数，所以 `lib/` 里的非组件代码（导入校验、打包 README）也能用。播放器运行时是 classic script，不能 import 词典，自带一份 `STRINGS` 表，语言取自 `payload.meta.locale`，切换时靠 `data-i18n` 节点整批刷新。
+
+## 8. CLI 与 Skill：同一份打包核心，两个适配层
+
+**分层**：
+
+```
+                 ┌──────────────────────────┐
+                 │ src/lib/pack-core.ts     │  纯：工程 + 播放器源码 + 素材字节 → ZipEntry
+                 │  （无环境依赖）           │  浏览器与 Node 共用
+                 └────────────┬─────────────┘
+          ┌───────────────────┴───────────────────┐
+          ▼                                       ▼
+  src/lib/pack.ts（浏览器）                bin/（Node）
+  fetch public/engine                      fs.readFile public/engine
+  IndexedDB getProjectBlobs                project.json + assets/
+  new Blob([buffer])                       writeFileAtomic
+```
+
+`pack-core` 只允许 import `jszip`、`./project`、`./pure`、`./types` 与 `@/i18n/dict`；
+`import.meta.env`、`fetch`、IndexedDB、React 一旦混进去，浏览器与终端就会各打各的包。
+`start.html`、`README.txt`、`data.js` 与 zip 条目名都在 core 里，改一处两边同时生效。
+
+**CLI 的运行方式**：命令写在 `bin/cli.ts`，启动器 `bin/galastar.mjs` 先用
+`module.registerHooks` 补上 tsconfig 的 `@/` 别名与无扩展名导入，再由 Node 24 原生擦除类型执行。
+这样不必引入 `tsx` / 打包步骤，也不会有「源码与 CLI 各维护一份 schema」的漂移；
+代价是 CLI 链上不能出现 `.tsx`、`enum`、`namespace`，且要求 Node ≥ 24（`.nvmrc` 已钉）。
+CJS 依赖（如 jszip）的 `require` 会被显式放行，否则内部相对路径会被改写成 `file://` 而解析失败。
+
+**校验的次序**：`build` 先对原始 JSON 做校验，再 `normalizeProject`。
+反过来会把「`scenes` 为空」悄悄补成一个默认场景，等于替作者掩盖了错误。
+校验器（`src/lib/validate.ts`）不读文件系统，素材是否落盘由调用方注入——
+`validate` 里缺素材是警告，`build` 里升级为错误，这样「先写剧情、后补图」仍然能工作。
+
+**预览与截图**：`serve` 是只读的 `node:http` 静态服务，只绑回环地址，统计 404；
+`shot` 复用同一个服务，但打开的是 `/__shot.html`：它用 `Galastar.create` 建舞台，
+再调 `showTitle()` / `showFrame(sceneId, index)` 定格（`running=false`，不会自动前进）。
+截图前先 `--dump-dom` 断言 `data-galastar-ready` 与 `gs-app`，再 `--screenshot`——
+没有这道闸，页面 404 或 JS 崩了也会得到一张「成功」的黑图。
+
+**Skill**：`.claude/skills/galastar/SKILL.md` 只放流程、硬约束与命令速查；
+完整字段表与写法放在 `references/`，命令与 JSON 契约放 `docs/specs/galastar-cli.md`。
+三者分工明确，避免 SKILL 变成第二份会过期的 schema。
+
+**远程素材**：`AssetRecord.url` 是数据模型里唯一允许「素材本体不在本地」的字段。`pack-core` 的 `assetRuntimePath()` 决定播放器拿到的地址：远程用 URL，本地用 `media/<fileName>`；同一条规则同时服务编辑器预览与导出产物。打包器遇到远程素材会跳过 `media/`，校验器则跳过本地文件存在性检查——两者都不联网，可达性由 `shot` / `serve` 的真实加载暴露。

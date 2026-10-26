@@ -2,7 +2,7 @@
 
 > GalGame IDE —— 在浏览器里写剧本、排立绘、接分支，一键打包成双击即玩的 Web 作品。
 
-Galastar 把「做一部 GalGame」拆成三步：**搭舞台 → 写台词 → 打包**。不需要写一行 JSON，也不需要装任何东西；作品和素材都存在本机浏览器里，导出的产物是纯静态文件，断网也能玩。
+Galastar 把「做一部 GalGame」拆成三步：**搭舞台 → 写台词 → 打包**。不需要写一行 JSON，也不需要装任何东西；作品和素材都存在本机浏览器里，导出的产物是纯静态文件，素材全用本地文件时断网也能玩。
 
 ## 它现在能做什么
 
@@ -17,6 +17,7 @@ Galastar 把「做一部 GalGame」拆成三步：**搭舞台 → 写台词 → 
 | 玩家侧功能 | 标题界面、逐字机、自动 / 快进、回看记录、6 格存读档、音量与文字速度设置、全屏                       |
 | 界面皮肤   | 默认 **PGF**（初代界面，取法 NEKOPARA 的排版），可切到 **夜航**（暗底衬现代版）                     |
 | 打包       | 导出 Web Zip（`start.html` + 播放器 + `media/`），也可导出 `.galastar` 工程包换设备继续编辑         |
+| 素材来源   | 默认上传到 IndexedDB；也可以填 http(s) 链接，远程素材不复制进 zip，播放时直接引用                   |
 | 撤销重做   | 80 步撤销栈，Ctrl+Z / Ctrl+Shift+Z                                                                  |
 | 编辑器主题 | 「首选项」里切深色 / 浅色，只作用于编辑器本身，不改作品皮肤                                         |
 | 界面语言   | 简体中文 / English，首次启动跟随浏览器语言；作品给玩家看的语言在项目设置里单独选                    |
@@ -41,6 +42,31 @@ pnpm check       # 格式 + lint + 类型检查（vp check）
 ```
 
 依赖用 **pnpm**，构建与检查统一走 **vp（Vite+）**；`base` 由 CI 的 `PAGES_BASE_PATH` 注入，本地恒为 `/`。
+
+## 命令行工具（面向 Agent）
+
+同一个仓库里还带一个 CLI：不打开浏览器，也能用 `project.json` 完成「写 → 校验 → 打包 → 截图自检」。
+它和编辑器共用同一份打包核心，所以终端产出的包与 GUI 导出的包结构一致，也能再导回编辑器继续改。
+
+```bash
+pnpm galastar doctor                          # 自检 Node / 播放器 / 浏览器
+pnpm galastar init my-story --template demo   # 起一个含分支与两个结局的最小作品
+pnpm galastar validate my-story               # 校验结构、引用与素材文件
+pnpm galastar build my-story                  # 产出 dist/<作品名>-web.zip
+pnpm galastar serve my-story                  # 本地预览
+pnpm galastar shot my-story --scene scene-hall --frame 0   # headless 截图
+```
+
+也可以 `pnpm link --global` 之后在任意目录直接用 `galastar <命令>`（需要 Node 24；
+第一次用全局命令前先跑一次 `pnpm setup`，把 pnpm 的全局 bin 目录加进 PATH）。
+新工程默认建在 `~/Documents/GalastarWorks/<名字>`；带 `/` 的路径会按路径创建，
+`--workspace` 或 `GALASTAR_WORKSPACE` 可以换工作区。
+所有命令都支持 `--json`（stdout 只有一个 JSON 对象），Agent 可以照着 `validate` 给出的
+稳定错误码逐条修复。
+
+- 命令与 JSON 字段的正式契约：[`docs/specs/galastar-cli.md`](docs/specs/galastar-cli.md)
+- 素材可以是本地文件，也可以直接引用 http(s) 链接（`asset add --url`）；远程素材不会复制进 zip。
+- 面向 Agent 的使用说明与工程格式：[`.claude/skills/galastar/SKILL.md`](.claude/skills/galastar/SKILL.md)
 
 ## 打包出来的东西长什么样
 
@@ -153,6 +179,11 @@ README.txt        ← 给玩家看的操作说明
 ## 目录结构
 
 ```
+├── bin/                    galastar CLI（启动器 + 命令实现 + demo 模板）
+│   ├── galastar.mjs        注册 TS 解析钩子后进入 cli.ts
+│   ├── cli.ts              命令与输出信封
+│   ├── lib/                工程读写、校验、静态服务、截图、素材命名
+│   └── templates/demo/     可直接打包与截图的最小作品
 ├── public/engine/          播放器运行时（编辑器与导出产物共用）
 │   ├── runtime.js          classic script，零依赖
 │   ├── runtime.css         舞台样式
@@ -161,9 +192,10 @@ README.txt        ← 给玩家看的操作说明
 │   ├── components/ui.tsx   基础组件（按钮 / 表单 / 弹层 / Toast）
 │   ├── features/library/   作品库
 │   ├── features/editor/    编辑器（舞台预览 / 场景 / 素材 / 角色 / 帧 / 检视器 / 打包）
-│   ├── lib/                类型、IndexedDB、作品工厂、打包、工具
+│   ├── lib/                类型、IndexedDB、作品工厂、校验、打包核心、工具
 │   └── store/editor.tsx    编辑器状态（自动保存 + 撤销栈）
-└── docs/                   架构与决策记录
+├── .claude/skills/galastar/  面向 Agent 的 SKILL 与工程格式参考
+└── docs/                   架构、决策记录与 CLI 契约
 ```
 
 ## 部署到 GitHub Pages
@@ -175,8 +207,8 @@ README.txt        ← 给玩家看的操作说明
 
 ## 边界与注意事项
 
-- **没有服务端**。作品与素材都在本机浏览器的 IndexedDB 里，换浏览器 / 清缓存就会丢，所以请定期「导出工程备份包」。
-- 素材按原格式打进 zip，不做压缩转码。想控制体积，请自行把背景压成 JPEG、音乐压成 MP3。
+- **没有服务端**。作品与本地素材都在本机浏览器的 IndexedDB 里，换浏览器 / 清缓存就会丢，所以请定期「导出工程备份包」。
+- 本地素材按原格式打进 zip，不做压缩转码；远程素材只保留 URL，不复制字节，播放时需要链接可访问。
 - 编辑器按桌面宽屏设计（≥ 1280px 体验最佳），暂不适配手机。
 - 导出作品支持手机浏览器，但立绘与文字按 1280×720 等比缩放，横屏体验更好。
 

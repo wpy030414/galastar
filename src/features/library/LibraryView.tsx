@@ -12,7 +12,8 @@ import {
   writeProject,
 } from '@/lib/db'
 import { importProjectFile } from '@/lib/pack'
-import { formatDate, timeAgo, uid } from '@/lib/utils'
+import { formatDate, timeAgo } from '@/lib/utils'
+import { uid } from '@/lib/pure'
 import { useI18n, type I18n } from '@/i18n'
 import { Button, Dialog, EmptyState, Field, Input, Menu, MenuItem, useToast } from '@/components/ui'
 

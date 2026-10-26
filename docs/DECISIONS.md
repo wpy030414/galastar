@@ -157,3 +157,71 @@
 **兼容**：旧作品没有 `meta.locale`，导入时归一化为 `zh-CN`；播放器在字段缺失时才回退到浏览器语言。
 
 **实现**：`prefs.tsx` 在 `main.tsx` 里先于首帧应用，避免深色闪一下；`translate()` 是纯函数，`lib/` 也能用；运行时不能 import 词典，自带 `STRINGS` 表并用 `data-i18n` 节点在语言变化时整批刷新。
+
+---
+
+## D15 · CLI 复用 TS 源码运行，打包核心与浏览器共享
+
+**决定**：新增 `bin/galastar`，命令本体是 TypeScript，由 `bin/galastar.mjs` 注册
+`module.registerHooks`（`@/` 别名 + 无扩展名补 `.ts`）后交给 Node 原生类型擦除执行；
+打包的核心逻辑抽到 `src/lib/pack-core.ts`，浏览器与 CLI 各自只做「取播放器、取素材、写字节」。
+
+**理由**：CLI 一旦自带一份工程 schema 与打包模板，就会和编辑器缓慢分叉——两边都能跑，
+产物却不一样。把 `pack-core` 做成纯函数、把环境差异压到两个薄适配层，
+才能保证「GUI 导出的包」与「终端打的包」长期一致。相比引入 `tsx`、tsup 或 vite lib 构建，
+解析钩子只有三十行、零依赖，且能让 `pnpm link --global` 直接可用。
+
+**代价**：CLI 依赖 Node 的类型擦除能力，最低版本抬到 24；CLI 导入链不能用 `.tsx`、
+`enum`、`namespace`；tsconfig 的 `include` 要加上 `bin`，`vp check` 才会覆盖它。
+解析规则集中在一个文件，将来若换成打包器，只需替换启动器。
+
+**实现**：`pure.ts` 收纳 `uid` / `safeFileName`，`asset-names.ts` 收纳素材命名，
+让 CLI 的导入链不经过 `utils.ts`（那里拉着 clsx / tailwind-merge）。
+CJS 依赖的 `require` 在钩子里显式放行，避免把 jszip 内部路径改写成 `file://`。
+
+---
+
+## D16 · Agent 的输入只要 project.json，不引入剧本 DSL
+
+**决定**：CLI 只接受 `project.json`（或含它的 `.galastar` 工程包），不设计
+`@scene` / `角色：台词` 之类的剧本文本格式，也不做「DSL → JSON」编译。
+
+**理由**：`Project` 的结构已经是完整的舞台快照模型，编辑器的每一项操作都能落到它上面。
+再加一层 DSL，就要维护语法、错误定位、双向转换，以及「DSL 表达不了、只能手改 JSON」
+的裂缝；而这些成本最终都会变成 Agent 的调试负担。对 Agent 而言，结构化的 JSON 加上
+稳定的错误码，比一门只有本项目会用的新语言更好用。
+
+**代价**：手写长剧本时 JSON 更啰嗦，`cast` / `bg` 这些快照字段要重复写。
+缓解是 `init --template demo` 给一份可复制的最小工程，`validate` 逐条指出重复 id、
+悬空 target、死锁选项，`assets` 由 `asset add` 代管文件名与 id。
+
+**实现**：`.claude/skills/galastar/references/project-json.md` 是字段事实来源；
+`docs/specs/galastar-cli.md` 是命令契约；两者与 `src/lib/types.ts` 一起改。
+
+---
+
+## D17 · 远程素材只存 URL，不复制字节
+
+**背景**：素材常常已经托管在 CDN / 图床上。作者想直接引用，而不是把几 MB 的图片再复制进工程目录和每一份导出包。
+
+**决定**：`AssetRecord` 增加可选的 `url`。填了 `http(s)` 链接的素材视为远程：不读 IndexedDB、不要求 `assets/` 下有文件、打包时不写 `media/`，`data.js` 里 `assets[id].path` 直接使用该 URL。只接受 `http://` / `https://`；`data:` / `file:` / `javascript:` 在导入、CLI 与校验器三处都会被拒绝。
+
+**理由**：引用与分发是两件事。素材放在作者可控的托管上时，工程应该能表达「它在那里」，而不是强迫复制一份。打包器只负责把本地字节搬进 zip；远程素材的可用性是作者与托管方的责任。把这条边界写进数据模型，比在打包器里偷偷下载更可预期。
+
+**代价**：导出的作品不再保证离线——链接失效、跨域策略变化、托管方限流都会让画面空掉。校验器只能验协议与引用，不能验证可达性；只有 `shot` / `serve` 真的加载时才会暴露 404。默认建议仍是本地素材，远程是显式选项。
+
+**实现**：`isHttpUrl` 是唯一的协议判定，`loadAssetUrls`、`pack-core.assetRuntimePath`、`validate.ts` 与 CLI 都复用它。远程素材仍保留唯一的 `fileName`，方便以后改回本地文件而不动引用；`validate` 对远程素材跳过本地文件检查，`build` 也不会把它计入缺失。
+
+---
+
+## D18 · 新作品默认落在 ~/Documents/GalastarWorks
+
+**背景**：Agent 需要一个稳定、可预期的作品落点。默认建在当前目录，会让工程散落在仓库、临时目录或任意 cwd 里；产物也会跟着跑，很难在下次会话里找回。
+
+**决定**：`init` 的裸名字解析为 `~/Documents/GalastarWorks/<proj_name>`；不给位置参数时用 `--name`（缺失则 `untitled`）。带 `/` 或 `\` 的路径按相对/绝对路径理解，工作区优先级为 `--workspace` > `GALASTAR_WORKSPACE` > 默认位置。`doctor` 输出工作区根与是否存在。
+
+**理由**：作品数据与工具仓库应该分开。工作区固定后，`dist/`、`.galastar/` 的落点也随之确定，既不污染 Galastar 仓库，也不需要每次复述绝对路径；显式路径仍然保留，方便把某部作品放进它自己的版本库。
+
+**代价**：默认行为从「当前目录」变成「工作区」。已有脚本若依赖 cwd，需要显式写 `./name`。Windows 的 `Documents` 可能被 OneDrive 重定向，实际位置以 `galastar doctor` 为准。
+
+**实现**：`resolveWorkspaceRoot()` 负责优先级与 `~` 展开；`init` 用 `safeFileName` 归一化目录名，`scaffoldProject` 递归创建父目录；`--json` 的 `data.dir` 是最终绝对路径，`data.workspace` 是工作区根。

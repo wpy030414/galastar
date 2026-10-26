@@ -20,7 +20,7 @@ import {
   type Slot,
   type SpriteTransform,
 } from './types'
-import { uid } from './utils'
+import { uid } from './pure'
 
 export const emptyCast = (): CastMap => ({ left: null, center: null, right: null })
 
