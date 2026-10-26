@@ -182,11 +182,11 @@ my-story/
   "kind": "chapter", // "chapter" | "ending"
   "title": "第一幕 完",
   "subtitle": "—— 幕间 ——",
-  "next": "scene-two", // null = 只显示「回到标题 / 再来一次」
+  "next": "scene-two", // null = 全线终点，只给「回到标题」
 }
 ```
 
-`next` 必须是有效场景 id，才会出现「继续」按钮。
+`next` 指向下一幕时，幕末卡不出现任何按钮：玩家点击任意位置就交叉渐变到下一幕的幕名开场帧，再点一下进入该幕第一句。`next` 为 `null`（或指向不存在的场景）时，只提供「回到标题」。
 
 ---
 

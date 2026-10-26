@@ -11,7 +11,7 @@
 ;(function (global) {
   'use strict'
 
-  var VERSION = '2.0.1'
+  var VERSION = '2.1.0'
   var SLOTS = ['left', 'center', 'right']
   /* 立绘摆放的兜底值：v2.0.1 之前的作品没有 transform 字段 */
   var DEFAULT_TRANSFORM = { scale: 100, offsetX: 0, offsetY: 0 }
@@ -127,9 +127,8 @@
       'player.kickerPreview': '预览',
       'player.kickerEnding': '结局',
       'player.kickerChapter': '本章完',
-      'player.next': '继续',
+      'player.kickerNext': '下一幕',
       'player.backToTitle': '回到标题',
-      'player.replay': '再来一次',
       'player.backlog': '回看',
       'player.aboutAuthor': '作者',
       'player.aboutVersion': '版本',
@@ -174,9 +173,8 @@
       'player.kickerPreview': 'Preview',
       'player.kickerEnding': 'Ending',
       'player.kickerChapter': 'End of chapter',
-      'player.next': 'Continue',
+      'player.kickerNext': 'Next act',
       'player.backToTitle': 'Title screen',
-      'player.replay': 'Play again',
       'player.backlog': 'Backlog',
       'player.aboutAuthor': 'Author',
       'player.aboutVersion': 'Version',
@@ -255,10 +253,18 @@
       auto: false,
       skip: false,
       history: [],
+      historyScene: null,
       frame: null,
+      /* 幕末卡 / 幕名开场帧 / 换幕动画期间的状态 */
+      endCard: false,
+      endNext: null,
+      opening: null,
+      busy: false,
+      /* 已经在幕名卡背后摆好、但还没开始逐字的台词 */
+      held: false,
     }
 
-    this.timers = { type: null, auto: null, transition: null }
+    this.timers = { type: null, auto: null, transition: null, fade: null }
     this.typeState = { full: '', shown: 0, done: true }
     this.bgActive = 'a'
     this.disposers = []
@@ -352,6 +358,24 @@
       },
     )
 
+    /*
+     * 幕名开场帧：跨幕时先给新的一幕一张专属卡片，再进入它的第一句。
+     * 它必须排在幕末卡之后，才能叠在幕末卡上方做交叉渐变。
+     */
+    this.openingLayer = el('div', 'gs-layer gs-opening')
+    this.openingBg = el('div', 'gs-opening-bg')
+    var openingBox = el('div', 'gs-opening-inner')
+    this.openingKicker = this.label('div', 'gs-opening-kicker', 'player.kickerNext')
+    this.openingTitle = el('div', 'gs-opening-title')
+    this.openingHint = this.label('div', 'gs-opening-hint', 'player.hint')
+    openingBox.appendChild(this.openingKicker)
+    openingBox.appendChild(this.openingTitle)
+    openingBox.appendChild(this.openingHint)
+    this.openingLayer.appendChild(this.openingBg)
+    this.openingLayer.appendChild(openingBox)
+    this.openingLayer.style.display = 'none'
+    frame.appendChild(this.openingLayer)
+
     app.appendChild(frame)
     clear(this.root)
     this.root.appendChild(app)
@@ -409,6 +433,7 @@
   Stage.prototype.setPayload = function (payload) {
     var self = this
     this.payload = payload
+    this.resetActCards()
     this.setLang(detectLang(payload))
     this.sceneMap = {}
     ;(payload.scenes || []).forEach(function (scene) {
@@ -564,9 +589,11 @@
   Stage.prototype.applyLineFrame = function (frame, opts) {
     var self = this
     var instant = !!opts.instant
-    var transition = instant ? 'cut' : frame.transition || 'fade'
+    /* hold：换幕时先把舞台摆好、但不开始逐字，等幕名卡淡出后再开口 */
+    var hold = !!opts.hold
+    var transition = instant || hold ? 'cut' : frame.transition || 'fade'
 
-    this.hideLayers()
+    this.hideLayers(!!opts.keepOpening)
     this.choices.style.display = 'none'
     this.app.classList.remove('gs-choosing')
     this.dialog.style.display = 'block'
@@ -594,15 +621,18 @@
       this.nameText.textContent = ''
     }
 
-    if (this.mode !== 'edit') this.pushHistory(displayName, frame.text, (char && char.color) || '')
+    if (this.mode !== 'edit' && !hold)
+      this.pushHistory(displayName, frame.text, (char && char.color) || '')
 
-    this.setTypewriter(frame.text, instant)
+    if (hold) this.holdType(frame.text)
+    else this.setTypewriter(frame.text, instant)
 
     /* 声音 */
     if (!opts.keepAudio && !instant) {
+      /* 音乐换幕时就该起，音效与语音等卡片掀开再放 */
       this.setBgm(this.assetPath(frame.bgm), frame.bgm)
-      if (frame.sfx) this.playOneShot('sfx', this.assetPath(frame.sfx))
-      if (frame.voice) this.playOneShot('voice', this.assetPath(frame.voice))
+      if (!hold && frame.sfx) this.playOneShot('sfx', this.assetPath(frame.sfx))
+      if (!hold && frame.voice) this.playOneShot('voice', this.assetPath(frame.voice))
     } else if (!opts.keepAudio && instant) {
       this.setBgm(null, null, true)
     }
@@ -623,8 +653,9 @@
     }
 
     this.view.waiting = true
+    this.view.held = hold
     this.applySkipState()
-    if (!instant && this.view.auto) this.scheduleAuto()
+    if (!instant && !hold && this.view.auto) this.scheduleAuto()
   }
 
   Stage.prototype.applyChoiceFrame = function (frame, opts) {
@@ -923,9 +954,11 @@
 
   Stage.prototype.startFrom = function (sceneId, index) {
     this.hideLayers()
+    this.resetActCards()
     this.app.classList.remove('gs-choosing')
     this.resetFlags()
     this.view.history = []
+    this.view.historyScene = null
     this.view.running = true
     this.view.auto = false
     this.view.skip = false
@@ -946,6 +979,9 @@
   }
 
   Stage.prototype.gotoScene = function (sceneId, index, opts) {
+    this.view.endCard = false
+    this.view.endNext = null
+    this.view.opening = null
     this.view.sceneId = sceneId
     this.view.index = index || 0
     this.render(opts || {})
@@ -953,6 +989,7 @@
 
   Stage.prototype.showFrame = function (sceneId, index) {
     if (!this.sceneMap[sceneId]) return
+    this.resetActCards()
     this.view.sceneId = sceneId
     this.view.index = index
     this.view.running = false
@@ -962,6 +999,17 @@
 
   Stage.prototype.advance = function () {
     if (this.mode === 'edit') return
+    if (this.view.busy) return
+    /* 幕名卡：点击掀开卡片，进入新的一幕 */
+    if (this.view.opening) {
+      this.dismissOpening()
+      return
+    }
+    /* 幕末卡：点击交叉渐变到下一幕，而不是停在按钮上 */
+    if (this.view.endNext) {
+      this.leaveAct()
+      return
+    }
     if (!this.view.running) return
     var frame = this.currentFrame()
     if (!frame) return
@@ -1001,19 +1049,48 @@
    * 覆盖层
    * ------------------------------------------------------------------ */
 
-  Stage.prototype.hideLayers = function () {
+  Stage.prototype.hideLayers = function (keepOpening) {
     ;[this.titleLayer, this.logLayer, this.saveLayer, this.configLayer, this.endLayer].forEach(
       function (layer) {
         layer.style.display = 'none'
       },
     )
+    if (!keepOpening && this.openingLayer) {
+      this.view.opening = null
+      this.openingLayer.style.display = 'none'
+      this.resetLayerFx(this.openingLayer)
+    }
     this.app.classList.remove('gs-layer-open')
   }
 
-  Stage.prototype.openLayer = function (layer) {
-    this.hideLayers()
+  Stage.prototype.openLayer = function (layer, keepTitle) {
+    if (keepTitle) {
+      /* 标题界面的「关于作品」：面板叠在标题上，标题本身要留在后面当背景 */
+      ;[this.logLayer, this.saveLayer, this.configLayer, this.endLayer].forEach(function (other) {
+        if (other !== layer) other.style.display = 'none'
+      })
+      if (this.openingLayer) {
+        this.openingLayer.style.display = 'none'
+        this.resetLayerFx(this.openingLayer)
+      }
+      this.view.opening = null
+    } else {
+      this.hideLayers()
+    }
     layer.style.display = 'flex'
     this.app.classList.add('gs-layer-open')
+  }
+
+  /** 关掉盖在标题上的面板；标题没在台前时退回原来的整层收起 */
+  Stage.prototype.closeLayers = function () {
+    if (this.titleLayer.style.display !== 'none') {
+      ;[this.logLayer, this.saveLayer, this.configLayer].forEach(function (layer) {
+        layer.style.display = 'none'
+      })
+      this.app.classList.remove('gs-layer-open')
+      return
+    }
+    this.hideLayers()
   }
 
   Stage.prototype.buildTitle = function () {
@@ -1073,6 +1150,7 @@
     if (this.mode === 'edit') return
     this.stopAuto()
     this.audio.bgm.pause()
+    this.resetActCards()
     this.view.running = false
     this.updateTitleState()
     this.openLayer(this.titleLayer)
@@ -1083,8 +1161,10 @@
     var self = this
     this.stopAuto()
     this.view.running = false
+    this.view.endNext = null
     var layer = this.endLayer
     clear(layer)
+    this.resetLayerFx(layer)
     var box = el('div', 'gs-end-inner')
     var kicker = el(
       'div',
@@ -1096,8 +1176,7 @@
           : this.text('player.kickerChapter'),
     )
     var title = el('h2', 'gs-end-title', frame.title || '—')
-    var sub = el('p', 'gs-end-sub', placeholder ? frame.subtitle || '' : frame.subtitle || '')
-    var menu = el('div', 'gs-end-menu')
+    var sub = el('p', 'gs-end-sub', frame.subtitle || '')
 
     if (!placeholder && this.payload.meta.name && this.payload.meta.name !== frame.title) {
       var brand = el('div', 'gs-end-brand', this.payload.meta.name)
@@ -1107,42 +1186,178 @@
     box.appendChild(title)
     box.appendChild(sub)
 
-    if (!placeholder && frame.next && this.sceneMap[frame.next]) {
-      var btnNext = this.label('button', 'gs-title-btn gs-title-btn-primary', 'player.next')
-      btnNext.type = 'button'
-      btnNext.addEventListener('click', function (ev) {
-        ev.stopPropagation()
-        self.gotoScene(frame.next, 0, {})
-      })
-      menu.appendChild(btnNext)
-    }
-    var btnTitle = this.label('button', 'gs-title-btn', 'player.backToTitle')
-    btnTitle.type = 'button'
-    btnTitle.addEventListener('click', function (ev) {
-      ev.stopPropagation()
-      if (self.mode === 'edit') {
-        self.hideLayers()
-        return
+    /*
+     * 幕末卡只做两件事：
+     *  - 有下一幕：不给按钮，任意处点击交叉渐变过去；
+     *  - 全线的最后：只留「回到标题」。
+     * 编辑态只把这一帧画出来，不提供任何动作。
+     */
+    if (this.mode !== 'edit') {
+      var next = !placeholder && frame.next && this.sceneMap[frame.next] ? frame.next : null
+      if (next) {
+        this.view.endNext = next
+        box.appendChild(this.label('div', 'gs-end-hint', 'player.hint'))
+      } else {
+        var menu = el('div', 'gs-end-menu')
+        var btnTitle = this.label('button', 'gs-title-btn', 'player.backToTitle')
+        btnTitle.type = 'button'
+        btnTitle.addEventListener('click', function (ev) {
+          ev.stopPropagation()
+          self.showTitle()
+        })
+        menu.appendChild(btnTitle)
+        box.appendChild(menu)
       }
-      self.showTitle()
-    })
-    var btnReplay = this.label('button', 'gs-title-btn', 'player.replay')
-    btnReplay.type = 'button'
-    btnReplay.addEventListener('click', function (ev) {
-      ev.stopPropagation()
-      var first = (self.payload.scenes || [])[0]
-      if (first) self.startFrom(first.id, 0)
-    })
-    menu.appendChild(btnTitle)
-    menu.appendChild(btnReplay)
-    box.appendChild(menu)
+    }
+
     layer.appendChild(box)
     this.openLayer(layer)
+    this.view.endCard = this.mode !== 'edit'
+  }
+
+  /* ---------------------------------------------------------------- 跨幕 */
+
+  Stage.prototype.firstLineOf = function (scene) {
+    if (!scene) return null
+    for (var i = 0; i < scene.frames.length; i++) {
+      if (scene.frames[i] && scene.frames[i].type === 'line') return scene.frames[i]
+    }
+    return null
+  }
+
+  Stage.prototype.resetLayerFx = function (layer) {
+    if (!layer) return
+    layer.style.opacity = ''
+    layer.style.transition = ''
+  }
+
+  /** 清掉幕末卡 / 幕名卡残留的一切状态，回到干净的播放态 */
+  Stage.prototype.resetActCards = function () {
+    this.view.endCard = false
+    this.view.endNext = null
+    this.view.opening = null
+    this.view.busy = false
+    this.view.held = false
+    this.clearTimer('fade')
+    if (this.openingLayer) {
+      this.openingLayer.style.display = 'none'
+      this.resetLayerFx(this.openingLayer)
+    }
+    if (this.endLayer) this.resetLayerFx(this.endLayer)
+  }
+
+  /**
+   * 幕末卡 → 下一幕幕名卡。
+   * 两张卡上下叠着，幕名卡淡入、幕末卡同时淡出，这就是交叉渐变；
+   * 舞台本身不动，等幕名卡退场时才切到新的一幕。
+   */
+  Stage.prototype.leaveAct = function () {
+    var self = this
+    var nextId = this.view.endNext
+    if (!nextId || this.view.busy || this.mode === 'edit') return
+    var scene = this.sceneMap[nextId]
+    if (!scene) {
+      this.view.endNext = null
+      return
+    }
+
+    this.view.endNext = null
+    this.view.endCard = false
+    this.view.busy = true
+    /* 换幕不是结束：后面的点击必须继续能推动剧情 */
+    this.view.running = true
+
+    var first = this.firstLineOf(scene)
+    var bg = first ? this.assetPath(first.bg) : ''
+    this.openingTitle.textContent = scene.name || ''
+    this.openingBg.style.backgroundImage = bg ? 'url("' + bg + '")' : 'none'
+
+    this.openingLayer.style.display = 'flex'
+    this.openingLayer.style.transition = 'none'
+    this.openingLayer.style.opacity = '0'
+    void this.openingLayer.offsetWidth
+    this.openingLayer.style.transition = 'opacity 640ms ease'
+    this.openingLayer.style.opacity = '1'
+    this.endLayer.style.transition = 'opacity 640ms ease'
+    this.endLayer.style.opacity = '0'
+    this.view.opening = nextId
+
+    this.timers.fade = global.setTimeout(function () {
+      self.resetLayerFx(self.endLayer)
+      self.endLayer.style.display = 'none'
+      self.view.busy = false
+    }, 660)
+  }
+
+  /**
+   * 幕名卡 → 新的一幕。
+   * 卡片还在淡出时，先在它背后把背景、立绘、音乐与名字都摆好；
+   * 等卡片完全退场，再让第一句开始逐字。这样看到的才是同一张背景的交叉渐变，
+   * 而不是先露出上一幕、再突然换景。
+   */
+  Stage.prototype.dismissOpening = function () {
+    var self = this
+    var nextId = this.view.opening
+    if (!nextId || this.view.busy || this.mode === 'edit') return
+    if (!this.sceneMap[nextId]) {
+      this.view.opening = null
+      return
+    }
+
+    this.view.busy = true
+    this.view.sceneId = nextId
+    this.view.index = 0
+    this.render({ hold: true, keepOpening: true })
+
+    this.openingLayer.style.transition = 'opacity 560ms ease'
+    this.openingLayer.style.opacity = '0'
+    this.timers.fade = global.setTimeout(function () {
+      self.openingLayer.style.display = 'none'
+      self.resetLayerFx(self.openingLayer)
+      self.view.opening = null
+      self.view.busy = false
+      self.releaseHeld()
+    }, 580)
+  }
+
+  /** 卡片掀开后再开口：补上逐字、音效、语音与台词记录 */
+  Stage.prototype.releaseHeld = function () {
+    if (!this.view.held) return
+    this.view.held = false
+    var frame = this.currentFrame()
+    if (!frame || frame.type !== 'line') {
+      /* 选择支之类的帧在 hold 时已经完整渲染好了，不需要补 */
+      this.view.waiting = true
+      return
+    }
+    var speaker = frame.speaker || { characterId: null, name: '' }
+    var char = speaker.characterId && this.payload.characters[speaker.characterId]
+    var displayName = char ? char.name : speaker.name || ''
+    this.pushHistory(displayName, frame.text, (char && char.color) || '')
+    this.setTypewriter(frame.text, false)
+    if (frame.sfx) this.playOneShot('sfx', this.assetPath(frame.sfx))
+    if (frame.voice) this.playOneShot('voice', this.assetPath(frame.voice))
+    this.view.waiting = true
+    this.applySkipState()
+  }
+
+  /** 只摆台、不开口：台词留到幕名卡退场之后 */
+  Stage.prototype.holdType = function (text) {
+    this.clearTimer('type')
+    this.textBox.textContent = ''
+    this.textBox.classList.remove('gs-typing', 'gs-done')
+    this.nextMark.style.opacity = '0'
+    this.typeState.full = text || ''
+    this.typeState.shown = 0
+    this.typeState.done = false
+    this.view.typing = false
   }
 
   Stage.prototype.openLog = function (aboutMode) {
     var self = this
     var layer = this.logLayer
+    /* 标题界面的「关于作品」：标题在场时，面板要叠在标题上，而不是把标题藏掉露出游戏画面 */
+    var overTitle = !!aboutMode && this.titleLayer.style.display !== 'none'
     clear(layer)
     var panel = el('div', 'gs-sheet gs-log-sheet')
     var head = el('div', 'gs-sheet-head')
@@ -1200,10 +1415,10 @@
     }
     close.addEventListener('click', function (ev) {
       ev.stopPropagation()
-      self.hideLayers()
+      self.closeLayers()
     })
     layer.appendChild(panel)
-    this.openLayer(layer)
+    this.openLayer(layer, overTitle)
   }
 
   /* ---------------------------- 存档 ---------------------------- */
@@ -1235,6 +1450,8 @@
       sceneName: scene ? scene.name : '',
       index: this.view.index,
       flags: this.view.flags,
+      /* 记录只属于本幕：读档时据此判断这批台词还能不能用 */
+      historyScene: this.view.sceneId,
       history: this.view.history.slice(-60),
       excerpt: frame && frame.type === 'line' ? frame.text.slice(0, 40) : '',
     }
@@ -1246,12 +1463,15 @@
     var all = readJSON(this.saveKey(), {})
     var data = slot === 'auto' ? this.readSaves()[0] : all[slot]
     if (!data) return
+    this.resetActCards()
     this.hideLayers()
     this.view.running = true
     this.view.sceneId = data.sceneId
     this.view.index = data.index
     this.view.flags = Object.assign({}, data.flags)
-    this.view.history = data.history || []
+    /* 记录只保留本幕的台词；旧存档没有 historyScene，跨幕的直接清空 */
+    this.view.history = data.historyScene === data.sceneId ? data.history || [] : []
+    this.view.historyScene = data.sceneId
     this.currentBg = undefined
     this.currentBgm = undefined
     this.render({})
@@ -1336,7 +1556,7 @@
     })
     close.addEventListener('click', function (ev) {
       ev.stopPropagation()
-      self.hideLayers()
+      self.closeLayers()
     })
     layer.appendChild(panel)
     this.paintSaves = paint
@@ -1463,7 +1683,7 @@
     panel.appendChild(body)
     close.addEventListener('click', function (ev) {
       ev.stopPropagation()
-      self.hideLayers()
+      self.closeLayers()
     })
     layer.appendChild(panel)
   }
@@ -1498,6 +1718,21 @@
     this.frame.addEventListener('click', onFrameClick)
     this.onFrameClick = onFrameClick
 
+    /*
+     * 幕末卡与幕名卡自己就是按钮：整张卡任意处点击都算继续。
+     * 它们盖住了舞台，所以不会和上面的 onFrameClick 抢事件。
+     */
+    this.endLayer.addEventListener('click', function (ev) {
+      if (self.mode === 'edit' || self.view.busy || !self.view.endNext) return
+      ev.stopPropagation()
+      self.leaveAct()
+    })
+    this.openingLayer.addEventListener('click', function (ev) {
+      if (self.mode === 'edit' || self.view.busy) return
+      ev.stopPropagation()
+      self.dismissOpening()
+    })
+
     this.toolButtons.auto.addEventListener('click', function (ev) {
       ev.stopPropagation()
       self.view.auto = !self.view.auto
@@ -1523,16 +1758,25 @@
       if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return
       var key = ev.key
       if (key === 'Escape') {
-        if (self.app.classList.contains('gs-layer-open')) self.hideLayers()
+        /* 幕末卡 / 幕名卡不能被设置面板顶掉 */
+        if (self.view.endCard || self.view.opening) return
+        if (self.app.classList.contains('gs-layer-open')) self.closeLayers()
         else self.openLayer(self.configLayer)
         return
       }
       if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
         ev.preventDefault()
-        if (self.app.classList.contains('gs-layer-open')) return
+        if (
+          self.app.classList.contains('gs-layer-open') &&
+          !self.view.endNext &&
+          !self.view.opening
+        )
+          return
         self.advance()
         return
       }
+      /* 卡片在台前时，其余快捷键让位给「点击继续」 */
+      if (self.view.endCard || self.view.opening) return
       if (key === 'l' || key === 'L') self.openLog(false)
       if (key === 's' || key === 'S') {
         self.openLayer(self.saveLayer)
@@ -1592,6 +1836,11 @@
 
   Stage.prototype.pushHistory = function (name, text, color) {
     if (!text) return
+    /* 记录只属于当前这一幕：换幕后从第一句重新开始记 */
+    if (this.view.historyScene !== this.view.sceneId) {
+      this.view.history = []
+      this.view.historyScene = this.view.sceneId
+    }
     var last = this.view.history[this.view.history.length - 1]
     if (last && last.text === text && last.name === name) return
     this.view.history.push({ name: name, text: text, color: color || '' })
@@ -1605,6 +1854,7 @@
   Stage.prototype.dispose = function () {
     this.clearTimer('type')
     this.clearTimer('auto')
+    this.clearTimer('fade')
     this.stopAuto()
     Object.keys(this.audio || {}).forEach(function (k) {
       var a = this.audio[k]

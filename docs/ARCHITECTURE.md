@@ -104,7 +104,9 @@ generateAsync(blob) → <a download> 触发保存
 `runtime.js` 是一个 IIFE，只暴露 `window.Galastar = { version, create, boot }`。
 
 - **`Stage`** 类持有 DOM、音频通道、逐字机、存档读写。
-- **`render()`** 按帧类型分派：`line` 走 `applyLineFrame`，`choice` 走 `applyChoiceFrame`，`jump` 在执行态递归/跳转，`end` 打开结局层。
+- **`render()`** 按帧类型分派：`line` 走 `applyLineFrame`，`choice` 走 `applyChoiceFrame`，`jump` 在执行态递归/跳转，`end` 打开幕末卡。
+- **幕间过渡**：幕末卡带 `next` 时不给按钮，任意处点击后两张卡叠着做交叉渐变（`leaveAct`），落在下一幕的幕名卡上；点开幕名卡时先以 `hold` 模式在卡片背后摆好新幕的背景 / 立绘 / 音乐与名字，卡片淡出后才开始逐字（`dismissOpening` → `releaseHeld`）。换幕会把 `view.running` 重新置为 true，跨幕后点击照常推进。
+- **台词记录按幕隔离**：`view.history` 与 `view.historyScene` 绑定，换幕的第一句会清掉上一幕的记录；存档一并保存 `historyScene`，读档时跨幕的旧记录直接丢弃。
 - **缩放**：舞台固定 1280×720，用 `transform: translate(-50%,-50%) scale(n)` 适配容器，`ResizeObserver` 驱动。
 - **存档**：`localStorage`，键 `galastar:save:<projectId>`，值是一张表（6 个槽位）；设置存 `galastar:config:<...>`。
 - **无 `eval`**：分支是"目标场景 + 标记条件"，不是任意 JS。这是 v1 → v2 的安全与稳定性改进。

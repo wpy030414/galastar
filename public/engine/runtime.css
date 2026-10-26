@@ -757,6 +757,83 @@
   min-width: 150px;
 }
 
+/* 幕末卡不再有按钮：整张卡就是「继续」 */
+.gs-end-hint,
+.gs-opening-hint {
+  margin-top: 54px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  animation: gs-hint-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes gs-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* ---------------------------------------------------------------- 幕名开场帧 */
+
+.gs-opening {
+  background: #050103;
+  /* 淡入淡出由 JS 控制，别让 .gs-layer 的入场动画抢走 opacity */
+  animation: none;
+}
+
+.gs-opening-bg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.5;
+}
+
+.gs-opening::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 70% at 50% 48%, rgba(5, 1, 3, 0.25), rgba(5, 1, 3, 0.92) 80%),
+    linear-gradient(180deg, rgba(5, 1, 3, 0.5), rgba(5, 1, 3, 0.9));
+  pointer-events: none;
+}
+
+.gs-opening-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.gs-opening-kicker {
+  margin-bottom: 26px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: var(--pgf-gold);
+  --gs-ol: 0.9px;
+}
+
+.gs-opening-title {
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #fff;
+  --gs-ol: 2.2px;
+  filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.6));
+}
+
 /* ---------------------------------------------------------------- 面板 */
 
 .gs-sheet {
@@ -935,7 +1012,10 @@
 
 .gs-save-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0,1fr)：不让「SLOT 01 里那行长字」把列宽顶开；
+   * grid-auto-rows 固定行高：存没存档，槽位都是同一块尺寸 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 96px;
   gap: 12px;
   overflow-y: auto;
   padding: 16px 26px 26px;
@@ -945,6 +1025,9 @@
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
   padding: 14px 16px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.04);
@@ -984,9 +1067,12 @@
 }
 
 .gs-save-scene {
+  overflow: hidden;
   font-size: 15px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.92);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gs-save-excerpt {
@@ -1339,12 +1425,14 @@
 }
 
 .gs-app[data-theme='night'] .gs-title-sub,
-.gs-app[data-theme='night'] .gs-end-kicker {
+.gs-app[data-theme='night'] .gs-end-kicker,
+.gs-app[data-theme='night'] .gs-opening-kicker {
   color: rgba(255, 255, 255, 0.62);
   text-shadow: none;
 }
 
-.gs-app[data-theme='night'] .gs-end-title {
+.gs-app[data-theme='night'] .gs-end-title,
+.gs-app[data-theme='night'] .gs-opening-title {
   filter: none;
   text-shadow: 0 0 40px color-mix(in srgb, var(--gs-accent) 50%, transparent);
 }

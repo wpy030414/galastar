@@ -179,7 +179,8 @@ export const editorZh = {
   'inspector.end.subtitle': '副标题 / 结语',
   'inspector.end.subtitlePlaceholder': '可以用换行写成两行诗',
   'inspector.end.next': '之后前往',
-  'inspector.end.nextHint': '留空则显示「回到标题 / 再来一次」',
+  'inspector.end.nextHint':
+    '留空则结束本作，只提供「回到标题」；填了下一幕，幕末卡任意处点击即交叉渐变过去',
   'inspector.end.finish': '结束本作',
 
   'inspector.condition.add': '添加条件',
@@ -366,7 +367,8 @@ export const editorEn: Record<keyof typeof editorZh, Message> = {
   'inspector.end.subtitle': 'Subtitle / closing words',
   'inspector.end.subtitlePlaceholder': 'Two lines make a couplet',
   'inspector.end.next': 'Then go to',
-  'inspector.end.nextHint': 'Leave empty to show “Back to title / Replay”',
+  'inspector.end.nextHint':
+    'Leave empty to end the work; only “Title screen” is offered. With a next scene, clicking anywhere on the chapter card crossfades into it',
   'inspector.end.finish': 'End the work',
 
   'inspector.condition.add': 'Add condition',
