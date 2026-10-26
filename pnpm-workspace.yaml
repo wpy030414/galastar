@@ -1,0 +1,5 @@
+# pnpm 12 起，安装策略从 .npmrc 迁到了这里。
+# 默认的 isolated（符号链接）布局在部分 Windows 机器上会静默失败：
+# 包都进了 .pnpm，但顶层没有 react / typescript，tsc 直接找不到模块。
+# hoisted 用平铺布局，路径啰嗦一点，换来「到哪台机器 pnpm install 都能跑」。
+nodeLinker: hoisted

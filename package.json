@@ -1,0 +1,34 @@
+{
+  "name": "galastar",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Galastar — 可视化 Galgame 创作引擎，一键打包为可离线游玩的 Web 作品",
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
+    "check": "vp check",
+    "check:fix": "vp check --fix"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.61.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.3",
+    "vite-plus": "^1.4.0"
+  }
+}
