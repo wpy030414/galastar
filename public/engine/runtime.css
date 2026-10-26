@@ -1,0 +1,1304 @@
+/*
+ * Galastar Runtime 2.0 — 舞台样式
+ *
+ * 默认皮肤是 PGF：一套 2015 年前后为 Galgame 手写的界面，
+ * 取法 NEKOPARA（ねこぱら）那类日式同人游戏的排版约定——
+ *
+ *   · 台词不上对话框，白字 + 暗红描边直接压在画面上
+ *   · 画面底部一层白色渐隐「洗白」，让字在任何背景上都能读
+ *   · 说话人用暖橙 + 描边，前面挂一个喇叭
+ *   · 页面本身是糊的（背景 blur），人物才是清晰的
+ *   · 没有立绘的角色一律压暗，说话的人亮着
+ *   · 系统菜单藏在右下角，几乎看不见，鼠标过去才浮出来
+ *   · 选项是一根暗红色横条，选中时闪一下白再变黑
+ *
+ * 第二套皮肤 night 复用同一套骨架，只换掉材质与布局取向，
+ * 供偏现代审美的作品使用。主题由 data-theme 决定，默认 pgf。
+ */
+
+/* ================================================================ 基础 */
+
+.gs-app,
+.gs-app * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.gs-app {
+  /* 三原色：暗红 / 血色描边 / 暖橙 */
+  --pgf-red: #8b0000;
+  --pgf-red-deep: #4a0000;
+  --pgf-stroke: #3b0000;
+  --pgf-gold: #ffae00;
+  --pgf-ink: #1a1012;
+  /* 立绘亮度：说话 / 不说话 / 选择中 */
+  --pgf-lit: 1;
+  --pgf-dim: 0.42;
+  --pgf-dim-choice: 0.3;
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family:
+    'Source Han Sans SC', 'Noto Sans SC', 'Hiragino Sans GB', 'PingFang SC', 'Microsoft YaHei',
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+.gs-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1280px;
+  height: 720px;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  overflow: hidden;
+  background: #000;
+  isolation: isolate;
+}
+
+/* ================================================================ 画面 */
+
+.gs-plate {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.gs-bg {
+  position: absolute;
+  /* 外扩 3% 再模糊，避免 blur 把画面边缘啃出白边 */
+  top: -3%;
+  left: -3%;
+  width: 106%;
+  height: 106%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(4px);
+  will-change: opacity, transform;
+}
+
+.gs-bg-a,
+.gs-bg-b {
+  z-index: 1;
+}
+
+.gs-vignette {
+  display: none;
+}
+
+/* ================================================================ 立绘 */
+
+.gs-cast {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.gs-slot {
+  position: absolute;
+  bottom: -2%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  transform: translateY(10px);
+  filter: brightness(var(--pgf-lit)) saturate(1);
+  transition:
+    opacity 340ms ease,
+    filter 340ms ease,
+    transform 340ms ease;
+}
+
+.gs-slot img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.gs-slot-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 说话的人亮着，其余压暗——PGF 的核心表演手段 */
+.gs-slot-dim {
+  filter: brightness(var(--pgf-dim)) saturate(0.92);
+}
+
+.gs-slot-speaker {
+  filter: brightness(var(--pgf-lit)) saturate(1);
+  z-index: 5;
+}
+
+.gs-app.gs-choosing .gs-slot {
+  filter: brightness(var(--pgf-dim-choice)) saturate(0.8);
+}
+
+.gs-slot-left {
+  left: 3%;
+  justify-content: flex-start;
+}
+
+.gs-slot-center {
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  justify-content: center;
+}
+
+.gs-slot-center.gs-slot-on {
+  transform: translateX(-50%) translateY(0);
+}
+
+.gs-slot-right {
+  right: 3%;
+  justify-content: flex-end;
+}
+
+/* ================================================================ 台词 */
+
+.gs-dialog {
+  position: absolute;
+  left: 266px;
+  right: 266px;
+  bottom: 44px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+/* 底部洗白：让人物下半身和文字都沉进一层薄雾里 */
+.gs-dialog::before {
+  content: '';
+  position: absolute;
+  left: -266px;
+  right: -266px;
+  bottom: -44px;
+  height: 330px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 24%,
+    rgba(255, 255, 255, 0.08) 52%,
+    rgba(255, 255, 255, 0.2) 76%,
+    rgba(255, 255, 255, 0.34) 100%
+  );
+  pointer-events: none;
+}
+
+.gs-name {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 9px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--pgf-gold);
+  -webkit-text-stroke: 1.25px var(--pgf-stroke);
+  text-shadow:
+    1.4px 1.4px 0 var(--pgf-stroke),
+    2px 2px 0 rgba(0, 0, 0, 0.32);
+}
+
+.gs-name::before {
+  content: '🔊';
+  position: absolute;
+  left: -46px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 21px;
+  -webkit-text-stroke: 0;
+  filter: drop-shadow(1px 1px 0 rgba(59, 0, 0, 0.7));
+}
+
+.gs-name-text {
+  color: var(--pgf-gold);
+}
+
+.gs-dialog[data-has-name='false'] .gs-name {
+  display: none;
+}
+
+.gs-text {
+  position: relative;
+  min-height: 38px;
+  font-size: 28px;
+  line-height: 38px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+  white-space: pre-wrap;
+  -webkit-text-stroke: 1.15px var(--pgf-stroke);
+  text-shadow:
+    1.3px 1.3px 0 var(--pgf-stroke),
+    1.4px 1.38px 0 var(--pgf-stroke),
+    2px 2px 0 rgba(0, 0, 0, 0.26);
+}
+
+/* 逐字结束后句尾那颗一闪一闪的点 */
+.gs-text.gs-done::after {
+  content: '●';
+  display: inline-block;
+  margin-left: 8px;
+  vertical-align: 2px;
+  font-size: 17px;
+  animation: gs-shine 1.8s infinite;
+}
+
+@keyframes gs-shine {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* PGF 不用箭头，闪烁的点已经够了 */
+.gs-next {
+  display: none;
+}
+
+/* ================================================================ 系统菜单 */
+
+.gs-toolbar {
+  position: absolute;
+  right: 36px;
+  bottom: 1px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.gs-tool {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 9px 15px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(26, 16, 18, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: color 380ms ease;
+}
+
+.gs-tool:hover {
+  color: var(--pgf-ink);
+}
+
+.gs-tool:active {
+  color: #cc0000;
+  transition: none;
+}
+
+.gs-tool-on {
+  color: #cc0000;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* ================================================================ 选项 */
+
+.gs-choices {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+  background: rgba(6, 0, 2, 0.14);
+}
+
+.gs-choice {
+  appearance: none;
+  width: 640px;
+  min-height: 62px;
+  padding: 14px 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: var(--pgf-red);
+  color: #fff;
+  font-family: inherit;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(59, 0, 0, 0.75);
+  cursor: pointer;
+  animation: gs-choice-in 280ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  transition: filter 160ms ease;
+}
+
+@keyframes gs-choice-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gs-choice:hover {
+  filter: brightness(0.86);
+}
+
+/* 选中：先闪成白纸黑字，再沉回近黑——原版就是这么收尾的 */
+.gs-choice-picked,
+.gs-choice-picked:hover {
+  filter: none;
+  animation: gs-choice-picked 520ms ease-out forwards;
+}
+
+@keyframes gs-choice-picked {
+  0% {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+  }
+  62% {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+  }
+  100% {
+    background: #111;
+    color: #fff;
+    text-shadow: none;
+  }
+}
+
+.gs-choice-text {
+  flex: 0 1 auto;
+}
+
+.gs-choice-index {
+  display: none;
+}
+
+.gs-choice-title {
+  margin-bottom: 4px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: 1.1px var(--pgf-stroke);
+  text-shadow: 1.4px 1.4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.gs-choice-locked .gs-choice {
+  pointer-events: none;
+}
+
+/* ================================================================ 演出 */
+
+.gs-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gs-flash-run {
+  animation: gs-flash 340ms ease-out;
+}
+
+@keyframes gs-flash {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.gs-shake {
+  animation: gs-shake 400ms ease-in-out;
+}
+
+@keyframes gs-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-9px, 2px);
+  }
+  50% {
+    transform: translate(8px, -5px);
+  }
+  75% {
+    transform: translate(-4px, 4px);
+  }
+}
+
+.gs-hint {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+
+/* ================================================================ 覆盖层 */
+
+.gs-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 2, 4, 0.76);
+  animation: gs-fade 180ms ease-out;
+}
+
+@keyframes gs-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------- 标题 */
+
+.gs-title {
+  background: #080204;
+}
+
+.gs-title-bg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  transform: scale(1.03);
+  animation: gs-kenburns 34s ease-in-out infinite alternate;
+}
+
+@keyframes gs-kenburns {
+  from {
+    transform: scale(1.03) translateY(0);
+  }
+  to {
+    transform: scale(1.1) translateY(-10px);
+  }
+}
+
+.gs-title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(8, 2, 4, 0.94) 2%,
+    rgba(8, 2, 4, 0.42) 44%,
+    rgba(8, 2, 4, 0.62) 100%
+  );
+}
+
+.gs-title-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: gs-rise 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gs-title-name {
+  font-size: 76px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.22;
+  color: #fff;
+  -webkit-text-stroke: 2.4px var(--pgf-stroke);
+  text-shadow:
+    3px 3px 0 rgba(59, 0, 0, 0.85),
+    0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.gs-title-sub {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.36em;
+  text-indent: 0.36em;
+  color: var(--pgf-gold);
+  -webkit-text-stroke: 0.7px var(--pgf-stroke);
+  text-shadow: 1.5px 1.5px 0 rgba(0, 0, 0, 0.4);
+}
+
+.gs-title-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin-top: 54px;
+  width: 336px;
+}
+
+.gs-title-btn {
+  appearance: none;
+  height: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: var(--pgf-red);
+  color: #fff;
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  text-shadow: 1px 1px 0 rgba(59, 0, 0, 0.75);
+  cursor: pointer;
+  transition:
+    filter 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.gs-title-btn:hover {
+  filter: brightness(0.86);
+}
+
+.gs-title-btn:active {
+  background: #fff;
+  color: var(--pgf-stroke);
+  text-shadow: none;
+  filter: none;
+}
+
+/* 主按钮就是选项「被选中」那一刻的配色：白纸黑字 */
+.gs-title-btn-primary {
+  background: #fff;
+  color: var(--pgf-red-deep);
+  text-shadow: none;
+}
+
+.gs-title-btn-primary:hover {
+  filter: none;
+  background: var(--pgf-gold);
+  color: var(--pgf-stroke);
+}
+
+.gs-title-foot {
+  margin-top: 36px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------------------------------------------------------------- 结局 */
+
+.gs-end {
+  background: rgba(5, 1, 3, 0.88);
+}
+
+.gs-end-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: gs-rise 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gs-end-brand {
+  margin-bottom: 42px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.gs-end-kicker {
+  margin-bottom: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  color: var(--pgf-gold);
+  -webkit-text-stroke: 0.6px var(--pgf-stroke);
+}
+
+.gs-end-title {
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fff;
+  -webkit-text-stroke: 2px var(--pgf-stroke);
+  text-shadow: 2.5px 2.5px 0 rgba(59, 0, 0, 0.8);
+}
+
+.gs-end-sub {
+  margin-top: 18px;
+  max-width: 720px;
+  font-size: 17px;
+  line-height: 1.95;
+  color: rgba(255, 255, 255, 0.74);
+  white-space: pre-wrap;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+
+.gs-end-menu {
+  display: flex;
+  gap: 12px;
+  margin-top: 44px;
+}
+
+.gs-end-menu .gs-title-btn {
+  min-width: 150px;
+}
+
+/* ---------------------------------------------------------------- 面板 */
+
+.gs-sheet {
+  display: flex;
+  flex-direction: column;
+  width: 900px;
+  max-height: 620px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(9, 4, 6, 0.95);
+  box-shadow: 0 40px 90px -40px #000;
+}
+
+.gs-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(to right, rgba(139, 0, 0, 0.6), rgba(139, 0, 0, 0.04));
+}
+
+.gs-sheet-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(59, 0, 0, 0.6);
+}
+
+.gs-close {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px 4px;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.gs-close:hover {
+  color: #fff;
+}
+
+/* 记录 */
+
+.gs-log-body {
+  overflow-y: auto;
+  padding: 24px 34px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gs-log-body::-webkit-scrollbar,
+.gs-save-grid::-webkit-scrollbar,
+.gs-config-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.gs-log-body::-webkit-scrollbar-thumb,
+.gs-save-grid::-webkit-scrollbar-thumb,
+.gs-config-body::-webkit-scrollbar-thumb {
+  background: #222;
+}
+
+.gs-log-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 24px;
+  line-height: 1.7;
+}
+
+.gs-log-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pgf-gold);
+}
+
+.gs-log-text {
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-wrap;
+}
+
+.gs-empty {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* 关于 */
+
+.gs-about {
+  padding: 26px 34px 32px;
+  overflow-y: auto;
+}
+
+.gs-about h4 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow: 1.5px 1.5px 0 rgba(59, 0, 0, 0.55);
+}
+
+.gs-about-sub {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.9;
+  color: rgba(255, 255, 255, 0.66);
+  white-space: pre-wrap;
+}
+
+.gs-about-table {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.gs-about-row {
+  display: flex;
+  gap: 18px;
+  font-size: 14px;
+}
+
+.gs-about-key {
+  width: 64px;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.gs-about-val {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 存档 / 读档 */
+
+.gs-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 16px 26px 0;
+}
+
+.gs-tab {
+  appearance: none;
+  height: 36px;
+  padding: 0 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.gs-tab:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.gs-tab-on {
+  border-color: rgba(255, 255, 255, 0.9);
+  background: var(--pgf-red);
+  color: #fff;
+}
+
+.gs-save-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  padding: 16px 26px 26px;
+}
+
+.gs-save-slot {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.gs-save-slot:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(139, 0, 0, 0.28);
+}
+
+.gs-save-slot:disabled {
+  opacity: 0.36;
+  cursor: default;
+}
+
+.gs-save-no {
+  padding-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--pgf-gold);
+  white-space: nowrap;
+}
+
+.gs-save-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gs-save-scene {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.gs-save-excerpt {
+  overflow: hidden;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gs-save-time {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.gs-save-empty {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* 设置 */
+
+.gs-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px 34px 30px;
+  overflow-y: auto;
+}
+
+.gs-config-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gs-config-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.gs-config-value {
+  color: var(--pgf-gold);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gs-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+  cursor: pointer;
+}
+
+.gs-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.75);
+  cursor: pointer;
+}
+
+.gs-range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.75);
+  cursor: pointer;
+}
+
+.gs-config-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.gs-config-actions .gs-title-btn {
+  flex: 1;
+}
+
+/* ================================================================ 编辑态 */
+
+.gs-mode-edit,
+.gs-mode-edit * {
+  cursor: default !important;
+}
+
+.gs-mode-edit .gs-toolbar,
+.gs-mode-edit .gs-hint {
+  display: none;
+}
+
+.gs-skipping .gs-choices {
+  display: none;
+}
+
+/* ================================================================ 皮肤：night
+ *
+ * 同一套骨架的另一种材质：背景不糊、台词回到一条压暗的底板上、
+ * 菜单回到右上角、选项变圆角。只重写「材质 + 位置」，结构不动。
+ */
+
+.gs-app[data-theme='night'] {
+  --pgf-red: color-mix(in srgb, var(--gs-accent) 34%, #0b0a14);
+  --pgf-red-deep: #0b0a14;
+  --pgf-stroke: #05050a;
+  --pgf-gold: var(--gs-accent);
+  --pgf-dim: 0.55;
+}
+
+.gs-app[data-theme='night'] .gs-bg {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  filter: none;
+}
+
+.gs-app[data-theme='night'] .gs-vignette {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(0, 0, 0, 0.42) 100%),
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.3) 0%,
+      transparent 22%,
+      transparent 58%,
+      rgba(0, 0, 0, 0.62) 100%
+    );
+}
+
+.gs-app[data-theme='night'] .gs-dialog {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 96px 54px;
+  min-height: 250px;
+  justify-content: flex-end;
+  background: linear-gradient(
+    to bottom,
+    rgba(6, 6, 12, 0) 0%,
+    rgba(6, 6, 12, 0.68) 30%,
+    rgba(4, 4, 9, 0.93) 100%
+  );
+}
+
+.gs-app[data-theme='night'] .gs-dialog::before {
+  display: none;
+}
+
+.gs-app[data-theme='night'] .gs-name {
+  margin-bottom: 12px;
+  font-size: 25px;
+  letter-spacing: 0.06em;
+  -webkit-text-stroke: 0;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+}
+
+.gs-app[data-theme='night'] .gs-name::before {
+  content: '';
+  width: 6px;
+  height: 19px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 16px currentColor;
+  filter: none;
+}
+
+.gs-app[data-theme='night'] .gs-name-text {
+  color: var(--gs-name-color, var(--gs-accent));
+}
+
+.gs-app[data-theme='night'] .gs-text {
+  font-size: 27px;
+  line-height: 1.62;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 0;
+  color: #f4f2ff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.gs-app[data-theme='night'] .gs-text.gs-done::after {
+  content: '▼';
+  font-size: 13px;
+  margin-left: 8px;
+  vertical-align: 3px;
+  color: var(--gs-accent);
+  animation: gs-bob 1.6s ease-in-out infinite;
+}
+
+@keyframes gs-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+.gs-app[data-theme='night'] .gs-toolbar {
+  top: 26px;
+  bottom: auto;
+  right: 40px;
+  gap: 18px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(8, 8, 14, 0.42);
+}
+
+.gs-app[data-theme='night'] .gs-tool {
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.44);
+  text-shadow: none;
+}
+
+.gs-app[data-theme='night'] .gs-tool:hover {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.gs-app[data-theme='night'] .gs-tool-on {
+  color: var(--gs-accent);
+}
+
+.gs-app[data-theme='night'] .gs-choices {
+  gap: 18px;
+  padding: 0 280px;
+  background: rgba(4, 4, 10, 0.5);
+}
+
+.gs-app[data-theme='night'] .gs-choice {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  background: linear-gradient(120deg, rgba(13, 13, 22, 0.92), rgba(11, 11, 19, 0.86));
+  font-size: 21px;
+  font-weight: 400;
+  text-align: left;
+  justify-content: flex-start;
+  text-shadow: none;
+}
+
+.gs-app[data-theme='night'] .gs-choice:hover {
+  filter: none;
+  border-color: color-mix(in srgb, var(--gs-accent) 70%, transparent);
+  background: linear-gradient(120deg, rgba(26, 24, 46, 0.95), rgba(18, 16, 32, 0.82));
+}
+
+.gs-app[data-theme='night'] .gs-choice-index {
+  display: block;
+  margin-right: 12px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--gs-accent);
+}
+
+.gs-app[data-theme='night'] .gs-choice-picked {
+  border-color: var(--gs-accent);
+  background: color-mix(in srgb, var(--gs-accent) 22%, #0b0a14);
+  animation: none;
+}
+
+.gs-app[data-theme='night'] .gs-next {
+  display: block;
+  position: absolute;
+  right: 96px;
+  bottom: 58px;
+  font-size: 13px;
+  color: var(--gs-accent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  animation: gs-bob 1.6s ease-in-out infinite;
+}
+
+.gs-app[data-theme='night'] .gs-text.gs-done::after {
+  content: none;
+}
+
+.gs-app[data-theme='night'] .gs-sheet {
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(16, 15, 26, 0.96), rgba(9, 9, 16, 0.98));
+}
+
+.gs-app[data-theme='night'] .gs-sheet-head {
+  background: none;
+  border-bottom: 0;
+  padding: 24px 32px 18px;
+}
+
+.gs-app[data-theme='night'] .gs-sheet-title {
+  font-size: 15px;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: none;
+}
+
+.gs-app[data-theme='night'] .gs-tab {
+  border-radius: 3px;
+  border-color: rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.gs-app[data-theme='night'] .gs-tab-on {
+  border-color: color-mix(in srgb, var(--gs-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--gs-accent) 16%, transparent);
+}
+
+.gs-app[data-theme='night'] .gs-title-btn {
+  border-radius: 3px;
+  font-weight: 400;
+  text-shadow: none;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.gs-app[data-theme='night'] .gs-title-btn:hover {
+  filter: none;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.42);
+  color: #fff;
+}
+
+.gs-app[data-theme='night'] .gs-title-btn-primary {
+  border-color: color-mix(in srgb, var(--gs-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--gs-accent) 18%, transparent);
+  color: #fff;
+}
+
+.gs-app[data-theme='night'] .gs-title-name {
+  font-size: 68px;
+  letter-spacing: 0.14em;
+  -webkit-text-stroke: 0;
+  text-shadow:
+    0 0 42px color-mix(in srgb, var(--gs-accent) 55%, transparent),
+    0 4px 30px rgba(0, 0, 0, 0.7);
+}
+
+.gs-app[data-theme='night'] .gs-title-sub,
+.gs-app[data-theme='night'] .gs-end-kicker {
+  -webkit-text-stroke: 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.gs-app[data-theme='night'] .gs-end-title {
+  -webkit-text-stroke: 0;
+  text-shadow: 0 0 40px color-mix(in srgb, var(--gs-accent) 50%, transparent);
+}
+
+.gs-app[data-theme='night'] .gs-log-name {
+  color: var(--gs-name-color, var(--gs-accent));
+}

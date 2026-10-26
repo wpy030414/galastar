@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galastar Preview</title>
+    <link rel="stylesheet" href="./runtime.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #06060c;
+        overflow: hidden;
+      }
+      #stage {
+        position: absolute;
+        inset: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script src="./runtime.js"></script>
+    <script>
+      /* 编辑器 ⇄ 播放器 的桥。编辑器只发三种指令：载入数据、定格某帧、从某帧开始试玩。 */
+      ;(function () {
+        var host = document.getElementById('stage')
+        var stage = null
+        var currentMode = null
+
+        function send(type, detail) {
+          try {
+            parent.postMessage(
+              { source: 'galastar-preview', type: type, detail: detail || null },
+              '*',
+            )
+          } catch (e) {
+            /* noop */
+          }
+        }
+
+        function mount(payload, mode, seek, play, title) {
+          if (stage && currentMode === mode) {
+            stage.setPayload(payload)
+          } else {
+            if (stage) stage.dispose()
+            currentMode = mode
+            stage = window.Galastar.create(host, payload, {
+              mode: mode,
+              onEvent: function (type, detail) {
+                send(type, detail)
+              },
+            })
+          }
+          if (play) stage.startFrom(play.sceneId, play.index)
+          else if (seek) stage.showFrame(seek.sceneId, seek.index)
+          if (title) stage.showTitle()
+          send('mounted', { mode: currentMode })
+        }
+
+        window.addEventListener('message', function (event) {
+          var msg = event.data
+          if (!msg || msg.source !== 'galastar-editor') return
+          if (msg.type === 'payload') {
+            mount(msg.payload, msg.mode || 'edit', msg.seek, msg.play, msg.title)
+          } else if (msg.type === 'show' && stage) {
+            stage.showFrame(msg.sceneId, msg.index)
+          } else if (msg.type === 'play' && stage) {
+            stage.startFrom(msg.sceneId, msg.index)
+          } else if (msg.type === 'title' && stage) {
+            stage.showTitle()
+          } else if (msg.type === 'skin' && stage) {
+            stage.setSkin(msg.skin)
+          }
+        })
+
+        send('ready', { version: window.Galastar ? window.Galastar.version : null })
+      })()
+    </script>
+  </body>
+</html>
