@@ -31,6 +31,9 @@
   --pgf-red-deep: #4a0000;
   --pgf-stroke: #3b0000;
   --pgf-gold: #ffae00;
+  /* 说话人喇叭：棕底 + 浅棕描边 */
+  --pgf-brown: #6d3b23;
+  --pgf-brown-edge: #c39a72;
   --pgf-ink: #1a1012;
   /* 立绘亮度：说话 / 不说话 / 选择中 */
   --pgf-lit: 1;
@@ -62,6 +65,34 @@
   overflow: hidden;
   background: #000;
   isolation: isolate;
+}
+
+/* ================================================================ 文字描边
+ *
+ * PGF 的字是「白色字面 + 一圈外描边」。外描边只能用向外的阴影堆出来：
+ * -webkit-text-stroke 画的是居中线描，一半落在字形内部，汉字笔画交叉的
+ * 地方就会浮出一条暗色细线（「十」「交」这类字最明显），和原版不一样。
+ * 这里用八向阴影生成一圈等宽的外沿，形状统一，各元素只改 --gs-ol 粗细。
+ */
+
+.gs-text,
+.gs-name,
+.gs-choice-title,
+.gs-title-name,
+.gs-title-sub,
+.gs-end-title,
+.gs-end-kicker {
+  --gs-ol: 1.5px;
+  text-shadow:
+    calc(var(--gs-ol) * -1) 0 0 var(--pgf-stroke),
+    calc(var(--gs-ol) * 1) 0 0 var(--pgf-stroke),
+    0 calc(var(--gs-ol) * -1) 0 var(--pgf-stroke),
+    0 calc(var(--gs-ol) * 1) 0 var(--pgf-stroke),
+    calc(var(--gs-ol) * -0.71) calc(var(--gs-ol) * -0.71) 0 var(--pgf-stroke),
+    calc(var(--gs-ol) * 0.71) calc(var(--gs-ol) * -0.71) 0 var(--pgf-stroke),
+    calc(var(--gs-ol) * -0.71) calc(var(--gs-ol) * 0.71) 0 var(--pgf-stroke),
+    calc(var(--gs-ol) * 0.71) calc(var(--gs-ol) * 0.71) 0 var(--pgf-stroke),
+    0 2px 10px rgba(0, 0, 0, 0.32);
 }
 
 /* ================================================================ 画面 */
@@ -172,7 +203,9 @@
   position: absolute;
   left: 266px;
   right: 266px;
-  bottom: 44px;
+  /* 底部控制区（.gs-toolbar）贴底不动，台词整体再往上提一档，
+   * 让文字离「隐形菜单」更远，画面重心也更高 */
+  bottom: 66px;
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -186,7 +219,8 @@
   position: absolute;
   left: -266px;
   right: -266px;
-  bottom: -44px;
+  /* 反向抵消 .gs-dialog 上移的距离，洗白层依旧从舞台底边往上升 */
+  bottom: -66px;
   height: 330px;
   background: linear-gradient(
     to bottom,
@@ -207,21 +241,32 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--pgf-gold);
-  -webkit-text-stroke: 1.25px var(--pgf-stroke);
-  text-shadow:
-    1.4px 1.4px 0 var(--pgf-stroke),
-    2px 2px 0 rgba(0, 0, 0, 0.32);
+  --gs-ol: 1.8px;
 }
 
+/* 说话人前面的喇叭：1em 直径的棕色实心圆，裹一圈 1px 浅棕描边。
+ * 垂直居中要对着「字面框」而不是行盒：中文字面框在 em 里是 0.88/0.12 分割，
+ * 中心落在基线上方 0.38em，比行盒中心低约 0.05em，所以这里补这一档。 */
 .gs-name::before {
-  content: '🔊';
+  content: '';
   position: absolute;
-  left: -46px;
-  top: 50%;
+  left: -44px;
+  top: calc(50% + 0.05em);
+  width: 1em;
+  height: 1em;
+  /* 伪元素不在 `.gs-app *` 的选择器范围内，box-sizing 得自己声明，
+   * 否则那 1px 描边会加在 1em 之外，直径变成 1em + 2px */
+  box-sizing: border-box;
   transform: translateY(-50%);
-  font-size: 21px;
-  -webkit-text-stroke: 0;
-  filter: drop-shadow(1px 1px 0 rgba(59, 0, 0, 0.7));
+  border-radius: 50%;
+  border: 1px solid var(--pgf-brown-edge);
+  background-color: var(--pgf-brown);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.6 9.3h3.1L11.6 5v14L6.7 14.7H3.6z' fill='%23ffe9d2'/%3E%3Cpath d='M14.6 9.1a4.4 4.4 0 0 1 0 5.8M17.4 6.6a8 8 0 0 1 0 10.8' fill='none' stroke='%23ffe9d2' stroke-width='2.1' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 62% 62%;
+  text-shadow: none;
+  filter: drop-shadow(1px 1px 0 rgba(59, 0, 0, 0.55));
 }
 
 .gs-name-text {
@@ -241,20 +286,36 @@
   letter-spacing: 0.01em;
   color: #fff;
   white-space: pre-wrap;
-  -webkit-text-stroke: 1.15px var(--pgf-stroke);
-  text-shadow:
-    1.3px 1.3px 0 var(--pgf-stroke),
-    1.4px 1.38px 0 var(--pgf-stroke),
-    2px 2px 0 rgba(0, 0, 0, 0.26);
+  --gs-ol: 1.6px;
 }
 
-/* 逐字结束后句尾那颗一闪一闪的点 */
+/* 逐字结束后句尾那颗一闪一闪的圆点，并当作一个字来画——
+ * 同样的棕色外描边（box-shadow 的 0 模糊扩散环，等于给圆描边又不吃尺寸）。
+ *
+ * 直径取 0.88em 而不是 1em：汉字的墨迹本身就只占 em 的 0.89~0.93
+ * （实测「星」0.96×0.89em、「见」1.00×0.93em），实心圆又比笔画显重，
+ * 真按 1em 画会明显比旁边的大一圈。0.88em 的白面 + 两侧 1.6px 描边
+ * 正好合回 1em，视觉上才和字一样大。
+ *
+ * 两个坑在这里一并避开：
+ *  - vertical-align 取 -0.06em：正好让圆心落在中文字面框的中心
+ *    （字面框是 0.88/0.12 的 em 分割，中心在基线上方 0.38em；0.88em 高的
+ *    圆想让圆心停在那儿，底边就得落到基线下 0.06em）。这样它和同一行汉字
+ *    视觉上是一条中线，而不是吊在基线上；
+ *  - 负的 margin-right 抵消掉自身宽度，最后一行即使刚好写满，
+ *    圆点也不会被挤到下一行、凭空多出一行。
+ */
 .gs-text.gs-done::after {
-  content: '●';
+  content: '';
   display: inline-block;
-  margin-left: 8px;
-  vertical-align: 2px;
-  font-size: 17px;
+  width: 0.88em;
+  height: 0.88em;
+  margin-left: 0.34em;
+  margin-right: -1.22em;
+  vertical-align: -0.06em;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 var(--gs-ol) var(--pgf-stroke);
   animation: gs-shine 1.8s infinite;
 }
 
@@ -406,8 +467,7 @@
   font-size: 26px;
   font-weight: 700;
   color: #fff;
-  -webkit-text-stroke: 1.1px var(--pgf-stroke);
-  text-shadow: 1.4px 1.4px 0 rgba(0, 0, 0, 0.3);
+  --gs-ol: 1.6px;
 }
 
 .gs-choice-locked .gs-choice {
@@ -560,10 +620,8 @@
   letter-spacing: 0.05em;
   line-height: 1.22;
   color: #fff;
-  -webkit-text-stroke: 2.4px var(--pgf-stroke);
-  text-shadow:
-    3px 3px 0 rgba(59, 0, 0, 0.85),
-    0 20px 60px rgba(0, 0, 0, 0.6);
+  --gs-ol: 2.8px;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.6));
 }
 
 .gs-title-sub {
@@ -573,8 +631,7 @@
   letter-spacing: 0.36em;
   text-indent: 0.36em;
   color: var(--pgf-gold);
-  -webkit-text-stroke: 0.7px var(--pgf-stroke);
-  text-shadow: 1.5px 1.5px 0 rgba(0, 0, 0, 0.4);
+  --gs-ol: 1.1px;
 }
 
 .gs-title-menu {
@@ -666,7 +723,7 @@
   letter-spacing: 0.5em;
   text-indent: 0.5em;
   color: var(--pgf-gold);
-  -webkit-text-stroke: 0.6px var(--pgf-stroke);
+  --gs-ol: 0.9px;
 }
 
 .gs-end-title {
@@ -674,8 +731,8 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   color: #fff;
-  -webkit-text-stroke: 2px var(--pgf-stroke);
-  text-shadow: 2.5px 2.5px 0 rgba(59, 0, 0, 0.8);
+  --gs-ol: 2.2px;
+  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
 }
 
 .gs-end-sub {
@@ -1099,7 +1156,6 @@
   margin-bottom: 12px;
   font-size: 25px;
   letter-spacing: 0.06em;
-  -webkit-text-stroke: 0;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
 }
 
@@ -1107,6 +1163,7 @@
   content: '';
   width: 6px;
   height: 19px;
+  border: 0;
   border-radius: 999px;
   background: currentColor;
   box-shadow: 0 0 16px currentColor;
@@ -1122,7 +1179,6 @@
   line-height: 1.62;
   font-weight: 400;
   letter-spacing: 0.02em;
-  -webkit-text-stroke: 0;
   color: #f4f2ff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
 }
@@ -1282,7 +1338,7 @@
 .gs-app[data-theme='night'] .gs-title-name {
   font-size: 68px;
   letter-spacing: 0.14em;
-  -webkit-text-stroke: 0;
+  filter: none;
   text-shadow:
     0 0 42px color-mix(in srgb, var(--gs-accent) 55%, transparent),
     0 4px 30px rgba(0, 0, 0, 0.7);
@@ -1290,12 +1346,12 @@
 
 .gs-app[data-theme='night'] .gs-title-sub,
 .gs-app[data-theme='night'] .gs-end-kicker {
-  -webkit-text-stroke: 0;
   color: rgba(255, 255, 255, 0.62);
+  text-shadow: none;
 }
 
 .gs-app[data-theme='night'] .gs-end-title {
-  -webkit-text-stroke: 0;
+  filter: none;
   text-shadow: 0 0 40px color-mix(in srgb, var(--gs-accent) 50%, transparent);
 }
 
