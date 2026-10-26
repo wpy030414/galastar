@@ -26,10 +26,39 @@ export interface AssetRecord {
 
 export type Slot = 'left' | 'center' | 'right'
 
+/**
+ * 立绘摆放。
+ * 立绘原图不一定是按角色居中裁切的，透明留白也各不相同，
+ * 所以「站位」只给一个落点，缩放与偏移留给每一帧自己调。
+ * 单位统一在 1280×720 舞台坐标系，播放器缩放时跟着舞台一起缩。
+ */
+export interface SpriteTransform {
+  /** 相对站位预设高度的缩放百分比，100 为正好占满站位 */
+  scale: number
+  /** 水平偏移（px），正方向向右 */
+  offsetX: number
+  /** 垂直偏移（px），正方向向下 */
+  offsetY: number
+}
+
+/**
+ * 三个字段各自可调到哪儿。滑杆、数字输入和归一化都读这里，
+ * 免得界面上的范围和落盘时的裁剪各写一份而慢慢对不上。
+ * 偏移上限取舞台的一半（1280/2、720 上下留裕度），足够把立绘推出画面。
+ */
+export const TRANSFORM_LIMITS = {
+  scale: { min: 20, max: 300, step: 5 },
+  offsetX: { min: -640, max: 640, step: 2 },
+  offsetY: { min: -400, max: 400, step: 2 },
+} as const satisfies Record<keyof SpriteTransform, { min: number; max: number; step: number }>
+
+export const DEFAULT_TRANSFORM: SpriteTransform = { scale: 100, offsetX: 0, offsetY: 0 }
+
 export interface CastSlot {
   characterId: string
   /** 表情键，对应 Character.sprites 的下标 */
   expression: string
+  transform: SpriteTransform
 }
 
 export type CastMap = Record<Slot, CastSlot | null>

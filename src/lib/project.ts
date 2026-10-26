@@ -1,21 +1,88 @@
-import type {
-  CastMap,
-  Character,
-  ChoiceFrame,
-  ChoiceOption,
-  EndFrame,
-  Frame,
-  JumpFrame,
-  LineFrame,
-  Project,
-  ProjectSummary,
-  RuntimeAsset,
-  RuntimePayload,
-  Scene,
+import {
+  DEFAULT_TRANSFORM,
+  TRANSFORM_LIMITS,
+  type CastMap,
+  type CastSlot,
+  type Character,
+  type ChoiceFrame,
+  type ChoiceOption,
+  type EndFrame,
+  type Frame,
+  type JumpFrame,
+  type LineFrame,
+  type Project,
+  type ProjectSummary,
+  type RuntimeAsset,
+  type RuntimePayload,
+  type Scene,
+  type Slot,
+  type SpriteTransform,
 } from './types'
 import { uid } from './utils'
 
 export const emptyCast = (): CastMap => ({ left: null, center: null, right: null })
+
+const SLOTS: Slot[] = ['left', 'center', 'right']
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+/** 数值输入可能被写歪（NaN、越界），渲染前统一收敛到合法范围 */
+export function normalizeTransform(raw?: Partial<SpriteTransform> | null): SpriteTransform {
+  const scale = Number(raw?.scale)
+  const offsetX = Number(raw?.offsetX)
+  const offsetY = Number(raw?.offsetY)
+  return {
+    scale: Number.isFinite(scale)
+      ? clamp(scale, TRANSFORM_LIMITS.scale.min, TRANSFORM_LIMITS.scale.max)
+      : DEFAULT_TRANSFORM.scale,
+    offsetX: Number.isFinite(offsetX)
+      ? clamp(offsetX, TRANSFORM_LIMITS.offsetX.min, TRANSFORM_LIMITS.offsetX.max)
+      : DEFAULT_TRANSFORM.offsetX,
+    offsetY: Number.isFinite(offsetY)
+      ? clamp(offsetY, TRANSFORM_LIMITS.offsetY.min, TRANSFORM_LIMITS.offsetY.max)
+      : DEFAULT_TRANSFORM.offsetY,
+  }
+}
+
+/** 改一帧的摆放要整体替换 cast，这里只负责把某个槽位换成新值 */
+export function withCastTransform(
+  cast: CastMap,
+  slot: Slot,
+  patch: Partial<SpriteTransform>,
+): CastMap {
+  const current = cast[slot]
+  if (!current) return cast
+  return { ...cast, [slot]: { ...current, transform: normalizeTransform({ ...current.transform, ...patch }) } }
+}
+
+/**
+ * 旧作品的 cast 没有 transform 字段。
+ * 每个槽位单独判定：只有「同一个角色」沿用下来的摆放才继承得过去——
+ * 同一角色的各套表情出自同一张画布，偏移量可以直接复用；
+ * 换了人就从零开始，否则会把上一个角色的构图偏移错加到新立绘上。
+ */
+export function normalizeCast(raw: unknown, prev: CastMap | null = null): CastMap {
+  const source = (raw ?? {}) as Partial<Record<Slot, CastSlot | null>>
+  const before = (prev ?? {}) as Partial<Record<Slot, CastSlot | null>>
+  const cast = emptyCast()
+  for (const slot of SLOTS) {
+    const entry = source[slot]
+    if (!entry || typeof entry !== 'object' || !entry.characterId) {
+      cast[slot] = null
+      continue
+    }
+    const carried = before[slot]
+    const sameSubject = !!carried && carried.characterId === entry.characterId
+    cast[slot] = {
+      characterId: entry.characterId,
+      expression: typeof entry.expression === 'string' ? entry.expression : '',
+      transform: normalizeTransform(
+        entry.transform ?? (sameSubject ? carried?.transform : undefined) ?? DEFAULT_TRANSFORM,
+      ),
+    }
+  }
+  return cast
+}
 
 export function createLineFrame(prev?: LineFrame | null): LineFrame {
   return {
@@ -27,7 +94,8 @@ export function createLineFrame(prev?: LineFrame | null): LineFrame {
     bgm: prev?.bgm ?? null,
     sfx: null,
     voice: null,
-    cast: prev ? { ...prev.cast } : emptyCast(),
+    // 舞台是完整快照，新建帧逐槽位复制上一帧（含缩放与偏移），而不是共享引用
+    cast: prev ? normalizeCast(prev.cast, prev.cast) : emptyCast(),
     transition: prev?.transition ?? 'fade',
     shake: false,
   }
@@ -219,7 +287,7 @@ function normalizeFrame(frame: Frame): Frame {
       ...createLineFrame(),
       ...frame,
       speaker: frame.speaker ?? { characterId: null, name: '' },
-      cast: { ...emptyCast(), ...frame.cast },
+      cast: normalizeCast(frame.cast),
     }
   }
   if (frame.type === 'choice') {

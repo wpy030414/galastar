@@ -1,3 +1,4 @@
+import { normalizeCast } from './project'
 import type { Project } from './types'
 
 /**
@@ -65,13 +66,19 @@ export async function listProjects(): Promise<Project[]> {
 }
 
 /**
- * 旧作品可能没有 meta.theme.skin（2.0 之前存的），读出来补齐默认值。
- * 放在读入口而不是渲染处，避免每个消费方都要判空。
+ * 旧作品可能缺字段（2.0 之前没有 theme.skin，也没有立绘的 transform），
+ * 读出来补齐默认值。放在读入口而不是渲染处，避免每个消费方都要判空。
  */
 function hydrate(project: Project): Project {
   const theme = project.meta.theme as { accent?: string; skin?: string } | undefined
   if (!theme || !theme.skin) {
     project.meta.theme = { accent: theme?.accent || '#9d8cff', skin: 'pgf' }
+  }
+  for (const scene of project.scenes ?? []) {
+    for (const frame of scene.frames ?? []) {
+      if (frame.type !== 'line' || !frame.cast) continue
+      frame.cast = normalizeCast(frame.cast)
+    }
   }
   return project
 }
