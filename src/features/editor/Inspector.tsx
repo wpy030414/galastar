@@ -1,5 +1,30 @@
-import { Copy, CornerDownLeft, GitBranch, Plus, Trash2, Type, Volume2, X } from 'lucide-react'
-import type { Condition, Frame, JumpFrame, LineFrame, Slot, Transition } from '@/lib/types'
+import { useState } from 'react'
+import {
+  Copy,
+  CornerDownLeft,
+  GitBranch,
+  MoveHorizontal,
+  MoveVertical,
+  Plus,
+  RotateCcw,
+  Scaling,
+  Trash2,
+  Type,
+  Volume2,
+  X,
+} from 'lucide-react'
+import {
+  DEFAULT_TRANSFORM,
+  TRANSFORM_LIMITS,
+  type Condition,
+  type Frame,
+  type JumpFrame,
+  type LineFrame,
+  type Slot,
+  type SpriteTransform,
+  type Transition,
+} from '@/lib/types'
+import { withCastTransform } from '@/lib/project'
 import { useEditor } from '@/store/editor'
 import { cn } from '@/lib/utils'
 import {
@@ -10,6 +35,7 @@ import {
   Input,
   Segmented,
   Select,
+  Slider,
   Switch,
   Textarea,
 } from '@/components/ui'
@@ -99,6 +125,17 @@ function LineEditor({ frame }: { frame: LineFrame }) {
   const { project, patchFrame, addFrame } = useEditor()
   const char = project.characters.find((c) => c.id === frame.speaker.characterId) ?? null
   const speakerMode = char ? 'char' : frame.speaker.name ? 'custom' : 'narration'
+
+  /**
+   * 改摆放要整体替换 cast，但仍以当前帧为底，
+   * 避免闭包拿到旧 frame 把其他槽位的改动一起写回去。
+   */
+  const setTransform = (slot: Slot, patch: Partial<SpriteTransform>, field: string) =>
+    patchFrame(
+      frame.id,
+      { cast: withCastTransform(frame.cast, slot, patch) },
+      `transform:${frame.id}:${slot}:${field}`,
+    )
 
   return (
     <div className="divide-y divide-border/40">
@@ -219,7 +256,7 @@ function LineEditor({ frame }: { frame: LineFrame }) {
         title="立绘"
         action={<span className="text-[10px] text-muted-foreground/40">说话的角色会被提亮</span>}
       >
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {SLOT_LABELS.map(({ slot, label }) => {
             const cast = frame.cast[slot]
             const castChar = project.characters.find((c) => c.id === cast?.characterId) ?? null
@@ -227,67 +264,113 @@ function LineEditor({ frame }: { frame: LineFrame }) {
               ? Object.keys(castChar.sprites).filter((e) => castChar.sprites[e])
               : []
             return (
-              <div key={slot} className="flex items-center gap-1.5">
-                <span className="w-4 shrink-0 text-center font-mono text-[10px] text-muted-foreground/45">
-                  {label}
-                </span>
-                <Select
-                  value={cast?.characterId ?? ''}
-                  onChange={(e) => {
-                    const id = e.target.value
-                    const next = { ...frame.cast }
-                    if (!id) next[slot] = null
-                    else {
-                      const target = project.characters.find((c) => c.id === id)
-                      const expr = target
-                        ? (Object.keys(target.sprites).find((k) => target.sprites[k]) ?? '')
-                        : ''
-                      next[slot] = { characterId: id, expression: expr }
-                    }
-                    patchFrame(frame.id, { cast: next })
-                  }}
-                  className="h-8 flex-1 text-xs"
-                >
-                  <option value="">—</option>
-                  {project.characters.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  value={cast?.expression ?? ''}
-                  disabled={!castChar}
-                  onChange={(e) => {
-                    if (!cast) return
-                    const next = { ...frame.cast }
-                    next[slot] = { ...cast, expression: e.target.value }
-                    patchFrame(frame.id, { cast: next })
-                  }}
-                  className="h-8 w-[92px] text-xs"
-                >
-                  <option value="">表情</option>
-                  {expressions.map((expr) => (
-                    <option key={expr} value={expr}>
-                      {expr}
-                    </option>
-                  ))}
-                </Select>
-                {cast ? (
-                  <button
-                    className="shrink-0 rounded p-1 text-muted-foreground/40 hover:text-foreground"
-                    title="移除"
-                    onClick={() =>
-                      patchFrame(frame.id, {
-                        cast: { ...frame.cast, [slot]: null } as LineFrame['cast'],
-                      })
-                    }
+              <div key={slot} className="rounded-md border border-border/50 bg-raised/20 p-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-4 shrink-0 text-center font-mono text-[10px] text-muted-foreground/45">
+                    {label}
+                  </span>
+                  <Select
+                    value={cast?.characterId ?? ''}
+                    onChange={(e) => {
+                      const id = e.target.value
+                      const next = { ...frame.cast }
+                      if (!id) next[slot] = null
+                      else {
+                        const target = project.characters.find((c) => c.id === id)
+                        const expr = target
+                          ? (Object.keys(target.sprites).find((k) => target.sprites[k]) ?? '')
+                          : ''
+                        next[slot] = {
+                          characterId: id,
+                          expression: expr,
+                          // 换人是换了一张画布，摆放必须从零开始
+                          transform: { ...DEFAULT_TRANSFORM },
+                        }
+                      }
+                      patchFrame(frame.id, { cast: next })
+                    }}
+                    className="h-8 flex-1 text-xs"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                ) : (
-                  <span className="w-5" />
-                )}
+                    <option value="">—</option>
+                    {project.characters.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    value={cast?.expression ?? ''}
+                    disabled={!castChar}
+                    onChange={(e) => {
+                      if (!cast) return
+                      const next = { ...frame.cast }
+                      next[slot] = { ...cast, expression: e.target.value }
+                      patchFrame(frame.id, { cast: next })
+                    }}
+                    className="h-8 w-[92px] text-xs"
+                  >
+                    <option value="">表情</option>
+                    {expressions.map((expr) => (
+                      <option key={expr} value={expr}>
+                        {expr}
+                      </option>
+                    ))}
+                  </Select>
+                  {cast ? (
+                    <button
+                      className="shrink-0 rounded p-1 text-muted-foreground/40 hover:text-destruct"
+                      title="移除"
+                      onClick={() =>
+                        patchFrame(frame.id, {
+                          cast: { ...frame.cast, [slot]: null } as LineFrame['cast'],
+                        })
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  ) : (
+                    <span className="w-5" />
+                  )}
+                </div>
+
+                {cast ? (
+                  <div className="mt-1.5 space-y-1 border-t border-border/40 pt-1.5">
+                    <TransformSlider
+                      icon={<Scaling className="h-3 w-3" />}
+                      label="缩放"
+                      unit="%"
+                      value={cast.transform.scale}
+                      limits={TRANSFORM_LIMITS.scale}
+                      onChange={(v) => setTransform(slot, { scale: v }, 'scale')}
+                    />
+                    <div className="grid grid-cols-2 gap-x-2">
+                      <TransformSlider
+                        icon={<MoveHorizontal className="h-3 w-3" />}
+                        label="X"
+                        unit="px"
+                        value={cast.transform.offsetX}
+                        limits={TRANSFORM_LIMITS.offsetX}
+                        onChange={(v) => setTransform(slot, { offsetX: v }, 'offsetX')}
+                      />
+                      <TransformSlider
+                        icon={<MoveVertical className="h-3 w-3" />}
+                        label="Y"
+                        unit="px"
+                        value={cast.transform.offsetY}
+                        limits={TRANSFORM_LIMITS.offsetY}
+                        onChange={(v) => setTransform(slot, { offsetY: v }, 'offsetY')}
+                      />
+                    </div>
+                    <button
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground/45 transition-colors hover:text-primary"
+                      title="缩放与偏移恢复默认"
+                      onClick={() => setTransform(slot, { ...DEFAULT_TRANSFORM }, 'reset')}
+                    >
+                      <RotateCcw className="h-2.5 w-2.5" />
+                      复位摆放
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )
           })}
@@ -547,6 +630,67 @@ function EndEditor({ frame: endFrame }: { frame: import('@/lib/types').EndFrame 
 }
 
 /* --------------------------------- 通用零件 --------------------------------- */
+
+/**
+ * 立绘摆放的单个数值控件：滑杆负责「拖到差不多」，数字框负责「钉到准确值」。
+ * 数字框在聚焦时不与外部值同步，否则逐字输入会被反向改写。
+ */
+function TransformSlider({
+  icon,
+  label,
+  unit,
+  value,
+  limits,
+  onChange,
+}: {
+  icon: React.ReactNode
+  label: string
+  unit: string
+  value: number
+  limits: { min: number; max: number; step: number }
+  onChange: (next: number) => void
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const shown = draft ?? String(value)
+
+  const commit = (raw: string) => {
+    const parsed = Math.round(Number(raw))
+    if (!raw.trim() || !Number.isFinite(parsed)) return
+    onChange(Math.min(limits.max, Math.max(limits.min, parsed)))
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="flex w-[52px] shrink-0 items-center gap-1 text-[10px] text-muted-foreground/60">
+        {icon}
+        {label}
+        <span className="text-muted-foreground/35">{unit}</span>
+      </span>
+      <Slider
+        value={value}
+        min={limits.min}
+        max={limits.max}
+        step={limits.step}
+        onChange={onChange}
+        className="min-w-0 flex-1"
+      />
+      <input
+        type="text"
+        inputMode="numeric"
+        value={shown}
+        onFocus={() => setDraft(String(value))}
+        onChange={(e) => {
+          const raw = e.target.value
+          if (!/^-?\d*$/.test(raw)) return
+          setDraft(raw)
+          commit(raw)
+        }}
+        onBlur={() => setDraft(null)}
+        className="h-6 w-11 shrink-0 rounded border border-border/70 bg-raised/50 px-1 text-right font-mono text-[10px] text-foreground focus:border-primary/60 focus:outline-none"
+      />
+    </div>
+  )
+}
 
 export function ConditionEditor({
   value,

@@ -38,9 +38,9 @@ interface EditorApi {
   selectFrame: (id: string | null) => void
   setMode: (mode: PreviewMode) => void
 
-  mutate: (change: (draft: Project) => void) => void
+  mutate: (change: (draft: Project) => void, coalesceKey?: string) => void
   patchMeta: (patch: Partial<Project['meta']>) => void
-  patchFrame: (id: string, patch: Partial<Frame>) => void
+  patchFrame: (id: string, patch: Partial<Frame>, coalesceKey?: string) => void
   addFrame: (type: FrameType) => void
   removeFrame: (id: string) => void
   duplicateFrame: (id: string) => void
@@ -157,15 +157,24 @@ export function EditorProvider({
   const past = useRef<Project[]>([])
   const future = useRef<Project[]>([])
   const [historyTick, setHistoryTick] = useState(0)
+  /**
+   * 连续输入（拖滑杆、按住微调）会在一瞬间产生上百次变更，
+   * 逐次压栈会把 80 步历史全部吃掉，撤销一次也退不回原位。
+   * 带同一个 key 的连续变更只压第一次，其余并入同一步。
+   */
+  const coalesceKey = useRef<string | null>(null)
 
-  const mutate = useCallback((change: (draft: Project) => void) => {
+  const mutate = useCallback((change: (draft: Project) => void, key?: string) => {
     const prev = latest.current
     if (!prev) return
     const draft = structuredClone(prev)
     change(draft)
     draft.meta.updatedAt = Date.now()
-    past.current.push(prev)
-    if (past.current.length > 80) past.current.shift()
+    if (!key || key !== coalesceKey.current) {
+      past.current.push(prev)
+      if (past.current.length > 80) past.current.shift()
+    }
+    coalesceKey.current = key ?? null
     future.current = []
     latest.current = draft
     setProject(draft)
@@ -178,6 +187,8 @@ export function EditorProvider({
       latest.current = target
       setProject(target)
       setDirty(true)
+      // 撤销 / 重做后，下一次同 key 的输入应该开新的一步
+      coalesceKey.current = null
       setHistoryTick((t) => t + 1)
       const scene = target.scenes.find((s) => s.id === sceneId) ?? target.scenes[0] ?? null
       if (!scene) return
@@ -222,7 +233,7 @@ export function EditorProvider({
   )
 
   const patchFrame = useCallback(
-    (id: string, patch: Partial<Frame>) => {
+    (id: string, patch: Partial<Frame>, key?: string) => {
       mutate((draft) => {
         for (const sc of draft.scenes) {
           const target = sc.frames.find((f) => f.id === id)
@@ -231,7 +242,7 @@ export function EditorProvider({
             return
           }
         }
-      })
+      }, key)
     },
     [mutate],
   )

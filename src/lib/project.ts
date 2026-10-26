@@ -52,7 +52,10 @@ export function withCastTransform(
 ): CastMap {
   const current = cast[slot]
   if (!current) return cast
-  return { ...cast, [slot]: { ...current, transform: normalizeTransform({ ...current.transform, ...patch }) } }
+  return {
+    ...cast,
+    [slot]: { ...current, transform: normalizeTransform({ ...current.transform, ...patch }) },
+  }
 }
 
 /**
