@@ -65,8 +65,11 @@ Project
 关键约束：
 
 - **帧是完整快照**。`bg` / `bgm` / `cast` 每帧都写全，不做增量合并（理由见 `DECISIONS.md` D1）。
+- **立绘摆放存在帧里**。`cast.***.transform = { scale, offsetX, offsetY }`（单位：站位高度百分比 / 舞台像素），随帧快照一起继承与复制。理由见 `DECISIONS.md` D12。
 - **资产只存元信息**，二进制在 IndexedDB 的 `blobs` 表，键为 `${projectId}:${assetId}`。
 - **运行时看到的资产是 `path`**：预览时是 `blob:` URL，导出时是 `media/<fileName>`。`buildPayload(project, resolvePath)` 负责这一步映射，两处调用方各自提供解析函数。
+
+旧作品可能缺字段（2.0 前没有 `theme.skin`，2.0.1 前没有 `cast.***.transform`），统一在 `db.ts` 的 `hydrate()` 读取入口补齐；播放器 `runtime.js` 的 `readTransform()` 独立兜底，因为导出的 `data.js` 是手工可改的外部输入，两处都不能假设字段一定存在。
 
 ## 3. 编辑器状态
 
@@ -74,6 +77,7 @@ Project
 
 - **`mutate(recipe)`**：`structuredClone` 出草稿 → 就地改 → 更新 `updatedAt` → 推入撤销栈 → 换引用。一个作品通常几百帧、几十 KB，这个成本可以忽略，换来的是"任何变更都不会漏掉不可变更新"。
 - **撤销栈**：`past` / `future` 两个 ref 存整个 `Project` 快照，上限 80 步。命令模式（每个操作写 undo）在这里性价比太低。
+- **连续输入合并为一步**：`mutate(recipe, coalesceKey)` 带同一个 key 的连续变更只压一次栈。滑杆（立绘缩放 / 偏移）拖动时一次产生上百个值，不合并就会吃满 80 步历史且撤销一次退不回原位。key 含帧、槽位与字段（`transform:{frameId}:{slot}:{field}`），所以换字段、换槽位、换帧都会开新的一步；撤销 / 重做后 key 清空。
 - **自动保存**：`project` 变化 → 650ms 防抖 → 写 IndexedDB。`dirty` 控制顶栏状态，`Ctrl+S` 立即落盘。
 - **选中状态**：`sceneId` / `frameId` 独立于作品数据；撤销后如果选中的帧不存在，自动回落到该幕第一帧。
 
