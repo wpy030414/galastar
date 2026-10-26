@@ -11,8 +11,11 @@
 ;(function (global) {
   'use strict'
 
-  var VERSION = '2.0.0'
+  var VERSION = '2.0.1'
   var SLOTS = ['left', 'center', 'right']
+  /* 立绘摆放的兜底值：v2.0.1 之前的作品没有 transform 字段 */
+  var DEFAULT_TRANSFORM = { scale: 100, offsetX: 0, offsetY: 0 }
+  var TRANSFORM_RANGE = { scale: [20, 300], offsetX: [-640, 640], offsetY: [-400, 400] }
   var STORE_SAVE = 'galastar:save:'
   var STORE_CONFIG = 'galastar:config:'
 
@@ -555,6 +558,22 @@
     }, 430)
   }
 
+  /**
+   * 读取一帧里某个槽位的摆放。
+   * 数值可能来自旧作品或手工改过的 data.js，一律收敛到合法范围，
+   * 否则一个 NaN 就能让立绘从画面里消失。
+   */
+  function readTransform(raw) {
+    var out = {}
+    Object.keys(DEFAULT_TRANSFORM).forEach(function (key) {
+      var value = Number(raw && raw[key])
+      var range = TRANSFORM_RANGE[key]
+      var safe = Number.isFinite(value) ? Math.min(range[1], Math.max(range[0], value)) : null
+      out[key] = safe === null ? DEFAULT_TRANSFORM[key] : safe
+    })
+    return out
+  }
+
   Stage.prototype.applyCast = function (frame, transition, instant) {
     var self = this
     var speakerId = frame.speaker && frame.speaker.characterId
@@ -575,7 +594,18 @@
         node.wrap.style.opacity = '0'
         return
       }
-      if (node.img.getAttribute('src') !== path) node.img.setAttribute('src', path)
+      var changed = node.img.getAttribute('src') !== path
+      if (changed) node.img.setAttribute('src', path)
+      /*
+       * 摆放写在 img 上，不是 wrap 上：wrap 的 transform 由 CSS 负责
+       * 站位（中位要 translateX(-50%)）和进场动画，内联覆盖会把它们一起抹掉。
+       * img 以脚底为原点缩放，偏移量用舞台坐标 px，跟着 .gs-frame 一起缩放。
+       */
+      var tf = readTransform(target.transform)
+      node.img.style.transform =
+        'translate(' + tf.offsetX + 'px, ' + tf.offsetY + 'px) scale(' + tf.scale / 100 + ')'
+      /* 换人换图时摆放直接落位，不要把上一个人的位置「滑」成新人的 */
+      node.img.style.transition = instant || changed ? 'none' : ''
       node.wrap.style.opacity = '1'
       node.wrap.classList.add('gs-slot-on')
       var speaking = speakerId && target.characterId === speakerId

@@ -156,6 +156,13 @@
   max-width: none;
   object-fit: contain;
   object-position: bottom center;
+  /*
+   * 编辑器里调的缩放 / 偏移写在这个 img 上（见 runtime.js 的 applyCast）。
+   * 原点定在脚底中点：放大时人物继续站在原来的地上，不会飘起来，
+   * 也不会因为站位用 translateX(-50%) 居中而左右跑偏。
+   */
+  transform-origin: bottom center;
+  transition: transform 340ms ease;
 }
 
 .gs-slot-on {
