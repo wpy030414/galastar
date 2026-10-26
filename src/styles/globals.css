@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 250 24% 4%;
+    --foreground: 250 20% 96%;
+    --panel: 249 20% 6.5%;
+    --raised: 248 18% 10%;
+    --border: 250 16% 16%;
+    --input: 250 16% 18%;
+    --ring: 252 100% 74%;
+    --primary: 252 100% 74%;
+    --primary-foreground: 252 60% 8%;
+    --secondary: 250 14% 14%;
+    --secondary-foreground: 250 20% 92%;
+    --muted: 250 12% 13%;
+    --muted-foreground: 250 10% 58%;
+    --accent: 252 40% 18%;
+    --accent-foreground: 252 90% 88%;
+    --destruct: 356 78% 58%;
+    --destruct-foreground: 0 0% 100%;
+    --star: 36 92% 62%;
+    --star-foreground: 30 60% 8%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      'cv02' 1,
+      'cv03' 1,
+      'cv04' 1,
+      'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  /* 细窄滚动条，编辑器里到处是滚动容器 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(250 14% 22%);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(250 14% 32%);
+    background-clip: content-box;
+  }
+
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  textarea {
+    resize: none;
+  }
+}
+
+@layer components {
+  /* 编辑器面板：面板底 + 顶部高光，做出玻璃质感 */
+  .panel {
+    @apply rounded-lg border border-border/70 bg-panel;
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.03) inset,
+      0 20px 40px -32px #000;
+  }
+
+  .hairline {
+    @apply border-border/60;
+  }
+
+  /* 顶部/底部工具栏的统一毛玻璃 */
+  .toolbar {
+    background: linear-gradient(180deg, hsl(249 22% 7% / 0.92), hsl(249 22% 5.5% / 0.92));
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /* 星空底纹：登录/项目库的舞台背景 */
+  .starfield {
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, hsl(0 0% 100% / 0.55) 50%, transparent 51%),
+      radial-gradient(1px 1px at 70% 12%, hsl(0 0% 100% / 0.4) 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 42% 68%, hsl(36 92% 70% / 0.5) 50%, transparent 51%),
+      radial-gradient(1px 1px at 88% 58%, hsl(0 0% 100% / 0.35) 50%, transparent 51%),
+      radial-gradient(1px 1px at 12% 82%, hsl(0 0% 100% / 0.3) 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 58% 40%, hsl(252 100% 82% / 0.45) 50%, transparent 51%);
+    background-size: 420px 420px;
+  }
+
+  .aurora {
+    background:
+      radial-gradient(60% 50% at 20% 0%, hsl(252 90% 40% / 0.28), transparent 70%),
+      radial-gradient(50% 45% at 85% 15%, hsl(190 90% 40% / 0.16), transparent 70%),
+      radial-gradient(40% 40% at 60% 100%, hsl(36 90% 45% / 0.1), transparent 70%);
+  }
+
+  /* 表单里的分区小标题 */
+  .section-label {
+    @apply text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80;
+  }
+
+  .field-label {
+    @apply mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground;
+  }
+
+  .kbd {
+    @apply inline-flex h-5 min-w-[20px] items-center justify-center rounded border border-border/80 bg-raised px-1 font-mono text-[10px] leading-none text-muted-foreground;
+  }
+
+  /* 选中态左侧光条，用于列表项 */
+  .rail-active {
+    box-shadow:
+      inset 2px 0 0 0 hsl(var(--primary)),
+      0 0 24px -12px hsl(var(--primary) / 0.9);
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .drag-none {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+}
