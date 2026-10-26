@@ -195,7 +195,8 @@ export function StagePreview() {
 
       {mode !== 'edit' ? (
         <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-[11px] text-white/55 backdrop-blur">
-          点击画面继续 · 空格/回车 · Ctrl 快进 · Esc 设置 · <kbd className="font-mono">F</kbd> 全屏
+          点击画面继续 · 空格/回车 · Ctrl 快进 · <kbd className="font-mono">A</kbd> 自动 · Esc 设置
+          · <kbd className="font-mono">F</kbd> 全屏
         </div>
       ) : null}
 

@@ -8,17 +8,9 @@ import type { UiSkin } from '@/lib/types'
 
 const ACCENTS = ['#9d8cff', '#7aa2ff', '#ffb1a0', '#7fd1b9', '#f5b544', '#f27a9c']
 
-const SKINS: { id: UiSkin; name: string; desc: string }[] = [
-  {
-    id: 'pgf',
-    name: 'PGF 经典',
-    desc: '白字描边直接压在画面上，背景糊掉，选项是暗红横条',
-  },
-  {
-    id: 'night',
-    name: '夜航',
-    desc: '台词落在暗色底板上，按钮与高亮跟随主题色',
-  },
+const SKINS: { id: UiSkin; name: string }[] = [
+  { id: 'pgf', name: 'PGF 经典' },
+  { id: 'night', name: '夜航' },
 ]
 
 export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -111,12 +103,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
                 )}
               >
                 <SkinPreview skin={skin.id} accent={project.meta.theme.accent} />
-                <div className="px-3 py-2.5">
-                  <p className="text-[12.5px] font-medium">{skin.name}</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/60">
-                    {skin.desc}
-                  </p>
-                </div>
+                <p className="px-3 py-2.5 text-[12.5px] font-medium">{skin.name}</p>
               </button>
             ))}
           </div>

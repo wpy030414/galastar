@@ -67,7 +67,7 @@ export type CastMap = Record<Slot, CastSlot | null>
 
 /**
  * 播放器皮肤。
- * pgf —— 初代 PGF 界面，取法 NEKOPARA 的排版（白字描边、糊背景、暗红选项条），默认。
+ * pgf —— 初代 PGF 界面，取法 NEKOPARA 的排版（白字描边、清晰背景、暗红选项条），默认。
  * night —— 现代一点的暗色底衬版，适合画面偏暗或偏写实的作品。
  */
 export type UiSkin = 'pgf' | 'night'

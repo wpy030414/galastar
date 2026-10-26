@@ -183,11 +183,9 @@
 
     var tools = [
       { key: 'auto', label: '自动' },
-      { key: 'skip', label: '跳过' },
       { key: 'log', label: '记录' },
       { key: 'save', label: '存档' },
       { key: 'config', label: '设置' },
-      { key: 'full', label: '全屏' },
     ]
     this.toolButtons = {}
     tools.forEach(function (t) {
@@ -839,11 +837,8 @@
   }
 
   Stage.prototype.syncToolButtons = function () {
-    var self = this
-    Object.keys(this.toolButtons || {}).forEach(function (key) {
-      var on = (key === 'auto' && self.view.auto) || (key === 'skip' && self.view.skip)
-      self.toolButtons[key].classList.toggle('gs-tool-on', !!on)
-    })
+    var auto = this.toolButtons.auto
+    if (auto) auto.classList.toggle('gs-tool-on', !!this.view.auto)
   }
 
   Stage.prototype.setHint = function (on) {
@@ -1335,13 +1330,6 @@
       self.syncToolButtons()
       if (self.view.auto && self.typeState.done && self.view.running) self.scheduleAuto()
     })
-    this.toolButtons.skip.addEventListener('click', function (ev) {
-      ev.stopPropagation()
-      self.view.skip = !self.view.skip
-      self.syncToolButtons()
-      self.applySkipState()
-      if (self.view.skip) self.fastForward()
-    })
     this.toolButtons.log.addEventListener('click', function (ev) {
       ev.stopPropagation()
       self.openLog(false)
@@ -1354,10 +1342,6 @@
     this.toolButtons.config.addEventListener('click', function (ev) {
       ev.stopPropagation()
       self.openLayer(self.configLayer)
-    })
-    this.toolButtons.full.addEventListener('click', function (ev) {
-      ev.stopPropagation()
-      self.toggleFullscreen()
     })
 
     this.onKey = function (ev) {

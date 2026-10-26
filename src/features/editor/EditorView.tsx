@@ -11,8 +11,7 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import { ExportDialog } from './ExportDialog'
 
 export function EditorView() {
-  const { project, dirty, saving, patchMeta, saveNow, close, undo, redo, canUndo, canRedo } =
-    useEditor()
+  const { dirty, saving, saveNow, close, undo, redo, canUndo, canRedo } = useEditor()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const toast = useToast()
@@ -55,17 +54,10 @@ export function EditorView() {
         </div>
         <div className="mx-0.5 h-4 w-px bg-border/70" />
 
-        <div className="flex min-w-0 items-center gap-2">
-          <input
-            value={project.meta.name}
-            onChange={(e) => patchMeta({ name: e.target.value })}
-            className="min-w-0 max-w-[260px] truncate rounded border border-transparent bg-transparent px-1.5 py-0.5 text-[13px] font-medium text-foreground outline-none transition-colors hover:border-border/60 focus:border-primary/50 focus:bg-raised/50"
-            placeholder="作品名"
-          />
-          <span className="hidden truncate text-[11px] text-muted-foreground/50 md:inline">
-            {project.meta.author || '未署名'}
-          </span>
-        </div>
+        <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)} title="项目设置">
+          <Settings2 className="h-3.5 w-3.5" />
+          项目
+        </Button>
 
         <div className="ml-auto flex items-center gap-1.5">
           <div className="mr-1 flex items-center gap-0.5">
@@ -104,10 +96,6 @@ export function EditorView() {
             {saving ? '保存中…' : dirty ? '有改动' : '已保存'}
           </span>
 
-          <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)}>
-            <Settings2 className="h-3.5 w-3.5" />
-            项目设置
-          </Button>
           <Button variant="primary" size="sm" onClick={() => setExportOpen(true)}>
             <Download className="h-3.5 w-3.5" />
             打包作品

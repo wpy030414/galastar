@@ -7,7 +7,7 @@
  *   · 台词不上对话框，白字 + 暗红描边直接压在画面上
  *   · 画面底部一层白色渐隐「洗白」，让字在任何背景上都能读
  *   · 说话人用暖橙 + 描边，前面挂一个喇叭
- *   · 页面本身是糊的（背景 blur），人物才是清晰的
+ *   · 背景原样呈现，不糊、不加滤镜
  *   · 没有立绘的角色一律压暗，说话的人亮着
  *   · 系统菜单藏在右下角，几乎看不见，鼠标过去才浮出来
  *   · 选项是一根暗红色横条，选中时闪一下白再变黑
@@ -105,15 +105,10 @@
 
 .gs-bg {
   position: absolute;
-  /* 外扩 3% 再模糊，避免 blur 把画面边缘啃出白边 */
-  top: -3%;
-  left: -3%;
-  width: 106%;
-  height: 106%;
+  inset: 0;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
-  filter: blur(4px);
   will-change: opacity, transform;
 }
 
@@ -212,7 +207,7 @@
   right: 266px;
   /* 底部控制区（.gs-toolbar）贴底不动，台词整体再往上提一档，
    * 让文字离「隐形菜单」更远，画面重心也更高 */
-  bottom: 66px;
+  bottom: 112px;
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -227,7 +222,7 @@
   left: -266px;
   right: -266px;
   /* 反向抵消 .gs-dialog 上移的距离，洗白层依旧从舞台底边往上升 */
-  bottom: -66px;
+  bottom: -112px;
   height: 330px;
   background: linear-gradient(
     to bottom,
@@ -1103,8 +1098,8 @@
 
 /* ================================================================ 皮肤：night
  *
- * 同一套骨架的另一种材质：背景不糊、台词回到一条压暗的底板上、
- * 菜单回到右上角、选项变圆角。只重写「材质 + 位置」，结构不动。
+ * 同一套骨架的另一种材质：台词回到一条压暗的底板上、菜单回到右上角、
+ * 选项变圆角、画面四角压暗。只重写「材质 + 位置」，结构不动。
  */
 
 .gs-app[data-theme='night'] {
@@ -1113,14 +1108,6 @@
   --pgf-stroke: #05050a;
   --pgf-gold: var(--gs-accent);
   --pgf-dim: 0.55;
-}
-
-.gs-app[data-theme='night'] .gs-bg {
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  filter: none;
 }
 
 .gs-app[data-theme='night'] .gs-vignette {
