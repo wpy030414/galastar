@@ -47,17 +47,8 @@ function framePreview(frame: Frame, speaker: string): string {
 }
 
 export function FrameStrip() {
-  const {
-    project,
-    scene,
-    frameId,
-    selectFrame,
-    addFrame,
-    removeFrame,
-    duplicateFrame,
-    moveFrame,
-    sceneId,
-  } = useEditor()
+  const { project, scene, frameId, selectFrame, addFrame, removeFrame, duplicateFrame, moveFrame } =
+    useEditor()
 
   return (
     <div className="flex h-[252px] shrink-0 flex-col border-t border-border/60 bg-panel/30">
@@ -183,11 +174,6 @@ export function FrameStrip() {
             })}
           </div>
         )}
-      </div>
-
-      <div className="flex items-center justify-between border-t border-border/40 px-3 py-1.5 text-[10px] text-muted-foreground/40">
-        <span>新帧会延续上一帧的背景与立绘，插入位置在选中帧之后</span>
-        <span className="font-mono">SCENE {sceneId.slice(-6).toUpperCase()}</span>
       </div>
     </div>
   )

@@ -49,14 +49,11 @@ export function EditorView() {
 
         <div className="flex items-center gap-2">
           <LogoMark />
-          <div className="hidden items-baseline gap-1.5 sm:flex">
-            <span className="text-[11px] font-semibold tracking-[0.2em] text-foreground/50">
-              GALASTAR
-            </span>
-          </div>
+          <span className="hidden text-[11px] font-semibold tracking-[0.2em] text-foreground/50 sm:inline">
+            GALASTAR
+          </span>
         </div>
-
-        <div className="mx-1 h-4 w-px bg-border/70" />
+        <div className="mx-0.5 h-4 w-px bg-border/70" />
 
         <div className="flex min-w-0 items-center gap-2">
           <input

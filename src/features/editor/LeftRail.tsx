@@ -178,13 +178,6 @@ function SceneList() {
         })}
       </div>
 
-      <div className="mt-3 px-3">
-        <Button variant="outline" size="sm" className="w-full" onClick={addScene}>
-          <Plus className="h-3.5 w-3.5" />
-          新建场景
-        </Button>
-      </div>
-
       <p className="mt-4 px-3 text-[11px] leading-relaxed text-muted-foreground/45">
         双击场景名可重命名。场景之间用「选项」或「跳转」帧衔接；一段作品的第一幕就是玩家看到的开头。
       </p>
