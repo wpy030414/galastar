@@ -206,7 +206,9 @@ export function LibraryView({ onOpen }: { onOpen: (id: string) => void }) {
 
         <div className="mt-10 border-b border-border/50 pb-3">
           <div className="flex items-baseline gap-3">
-            <h2 className="text-[13px] font-medium tracking-wide text-foreground/80">{t('library.mine')}</h2>
+            <h2 className="text-[13px] font-medium tracking-wide text-foreground/80">
+              {t('library.mine')}
+            </h2>
             <span className="font-mono text-[11px] text-muted-foreground/50">
               {t('library.stats', {
                 works: projects?.length ?? 0,
@@ -378,7 +380,8 @@ function ProjectCard({
         <div className="px-4 py-3">
           <p className="truncate text-[14.5px] font-medium text-foreground">{project.meta.name}</p>
           <p className="mt-1 truncate text-[11px] text-muted-foreground/60">
-            {project.meta.author || t('library.authorFallback')} · {agoLabel(project.meta.updatedAt, i18n)}
+            {project.meta.author || t('library.authorFallback')} ·{' '}
+            {agoLabel(project.meta.updatedAt, i18n)}
           </p>
         </div>
       </button>

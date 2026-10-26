@@ -138,11 +138,7 @@ export function createCharacter(name = '新角色', color = '#9d8cff'): Characte
   return { id: uid('c'), name, color, sprites: {} }
 }
 
-export function createProject(
-  name?: string,
-  author = '',
-  locale: Locale = 'zh-CN',
-): Project {
+export function createProject(name?: string, author = '', locale: Locale = 'zh-CN'): Project {
   const now = Date.now()
   return {
     meta: {

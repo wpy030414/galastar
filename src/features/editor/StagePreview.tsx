@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2, Maximize2, PencilRuler, Play, Sparkles, Square } from 'lucide-react'
+import { Loader2, Play, Sparkles, Square } from 'lucide-react'
 import { buildPayload } from '@/lib/project'
 import { useI18n } from '@/i18n'
 import { useEditor } from '@/store/editor'
-import { Button, Chip } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui'
 
 const PREVIEW_URL = `${import.meta.env.BASE_URL}engine/preview.html`
 
@@ -102,15 +101,7 @@ export function StagePreview() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-[radial-gradient(90%_70%_at_50%_42%,#0c0a16_0%,#05050a_70%)]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3">
-        <div className="pointer-events-auto flex items-center gap-2">
-          <Chip tone={mode === 'edit' ? 'muted' : 'green'}>
-            {mode === 'play' ? t('stage.mode.play') : mode === 'title' ? t('stage.mode.title') : t('stage.mode.edit')}
-          </Chip>
-          <span className="rounded bg-black/40 px-1.5 py-0.5 font-mono text-[10px] text-white/45 backdrop-blur">
-            1280 × 720
-          </span>
-        </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-end p-3">
         <div className="pointer-events-auto flex items-center gap-1.5">
           {mode === 'edit' ? (
             <>
@@ -200,22 +191,6 @@ export function StagePreview() {
           {t('stage.hintPlay')}
         </div>
       ) : null}
-
-      {mode !== 'edit' ? (
-        <div className="pointer-events-none absolute right-3 top-12 flex items-center gap-1.5 text-[10px] text-white/35">
-          <Maximize2 className="h-3 w-3" />
-          <span>{t('stage.sameAsExport')}</span>
-        </div>
-      ) : (
-        <div
-          className={cn(
-            'pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 text-[10px] text-white/30',
-          )}
-        >
-          <PencilRuler className="h-3 w-3" />
-          <span>{t('stage.selectedFrame')}</span>
-        </div>
-      )}
     </div>
   )
 }

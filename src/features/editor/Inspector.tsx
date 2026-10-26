@@ -158,7 +158,10 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                 if (v === '') patchFrame(frame.id, { speaker: { characterId: null, name: '' } })
                 else if (v === '__custom')
                   patchFrame(frame.id, {
-                    speaker: { characterId: null, name: frame.speaker.name || t('inspector.line.defaultName') },
+                    speaker: {
+                      characterId: null,
+                      name: frame.speaker.name || t('inspector.line.defaultName'),
+                    },
                   })
                 else {
                   const target = project.characters.find((c) => c.id === v)
@@ -206,7 +209,9 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                 <CornerDownLeft className="h-3 w-3" />
                 {t('inspector.line.newLineHint')}
               </span>
-              <span className="font-mono">{t('inspector.line.charCount', { n: frame.text.length })}</span>
+              <span className="font-mono">
+                {t('inspector.line.charCount', { n: frame.text.length })}
+              </span>
             </div>
           </div>
         </div>
@@ -542,7 +547,9 @@ function FlagAdder({ onAdd }: { onAdd: (key: string, value: string) => void }) {
   const { t } = useI18n()
   return (
     <div className="flex flex-wrap items-center gap-1 pt-0.5">
-      <span className="text-[10px] text-muted-foreground/40">{t('inspector.choice.writeFlag')}</span>
+      <span className="text-[10px] text-muted-foreground/40">
+        {t('inspector.choice.writeFlag')}
+      </span>
       {project.flags.length === 0 ? (
         <span className="text-[10px] text-muted-foreground/30">
           {t('inspector.choice.noFlags')}

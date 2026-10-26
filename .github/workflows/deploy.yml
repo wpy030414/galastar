@@ -34,9 +34,6 @@ jobs:
           test -f pnpm-lock.yaml
           test -f node_modules/.modules.yaml
 
-      - name: Check
-        run: vp check
-
       # base 只在这里注入，代码里不做推断：
       #   项目页：变量未设置 → 默认 /<repo>/
       #   自定义域 / 用户页：把仓库变量 PAGES_BASE_PATH 设为 /

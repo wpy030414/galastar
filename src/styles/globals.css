@@ -76,7 +76,6 @@
     --dot: 250 28% 34%;
   }
 
-
   * {
     @apply border-border;
   }

@@ -638,13 +638,17 @@
         break
       }
     }
+    /*
+     * 选择支没有说话人。名字栏只能通过 data-has-name 关掉，不能内联 display: none：
+     * 内联样式会一直留着，切回台词帧时名字栏就再也不出现了。
+     */
+    this.dialog.dataset.hasName = 'false'
     /* 选择支沿用上一帧的舞台，避免黑屏 */
     if (prev) {
       this.currentBg = prev.bg
       this.swapBackground(this.assetPath(prev.bg), 'cut', true)
       this.applyCast(prev, 'cut', true)
       this.dialog.style.display = 'block'
-      this.nameBox.style.display = 'none'
       this.textBox.textContent = frame.prompt || ''
       this.textBox.classList.remove('gs-typing', 'gs-done')
     } else {

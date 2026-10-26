@@ -3,9 +3,6 @@ import type { Message } from '../types'
 /** 编辑器：舞台、帧条、左栏、检查器、素材选择器 */
 export const editorZh = {
   /* ---------------------------------- 舞台 ---------------------------------- */
-  'stage.mode.edit': '编辑预览',
-  'stage.mode.play': '试玩中',
-  'stage.mode.title': '标题界面',
   'stage.prevFrame': '上一帧',
   'stage.nextFrame': '下一帧',
   'stage.titleBtn': '标题',
@@ -14,8 +11,6 @@ export const editorZh = {
   'stage.stop': '退出试玩',
   'stage.iframeTitle': 'Galastar 舞台预览',
   'stage.hintPlay': '点击画面继续 · 空格/回车 · Ctrl 快进 · A 自动 · Esc 设置 · F 全屏',
-  'stage.sameAsExport': '与导出作品完全同源',
-  'stage.selectedFrame': '选中帧即时呈现',
 
   /* ---------------------------------- 帧条 ---------------------------------- */
   'frames.title': '剧本帧',
@@ -194,9 +189,6 @@ export const editorZh = {
 } as const
 
 export const editorEn: Record<keyof typeof editorZh, Message> = {
-  'stage.mode.edit': 'Edit preview',
-  'stage.mode.play': 'Playtest',
-  'stage.mode.title': 'Title screen',
   'stage.prevFrame': 'Previous frame',
   'stage.nextFrame': 'Next frame',
   'stage.titleBtn': 'Title',
@@ -206,8 +198,6 @@ export const editorEn: Record<keyof typeof editorZh, Message> = {
   'stage.iframeTitle': 'Galastar stage preview',
   'stage.hintPlay':
     'Click to continue · Space/Enter · Hold Ctrl to skip · A auto · Esc settings · F fullscreen',
-  'stage.sameAsExport': 'Identical to the exported build',
-  'stage.selectedFrame': 'The selected frame, rendered live',
 
   'frames.title': 'Frames',
   'frames.empty': 'This scene is empty',

@@ -161,9 +161,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
           <div className="mb-2 flex items-center justify-between">
             <div>
               <p className="text-[13px] font-medium">{t('settings.flags')}</p>
-              <p className="text-[11px] text-muted-foreground/60">
-                {t('settings.flagsHint')}
-              </p>
+              <p className="text-[11px] text-muted-foreground/60">{t('settings.flagsHint')}</p>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -179,7 +177,9 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
                   }
                   className="h-8 flex-1 font-mono text-[11px]"
                 />
-                <span className="text-[10px] text-muted-foreground/40">{t('settings.initialValue')}</span>
+                <span className="text-[10px] text-muted-foreground/40">
+                  {t('settings.initialValue')}
+                </span>
                 <Input
                   value={flag.initial}
                   onChange={(e) =>
@@ -232,9 +232,7 @@ export function ProjectSettingsDialog({ open, onClose }: { open: boolean; onClos
 
         <div className="flex items-start gap-2 rounded-lg border border-star/25 bg-star/[0.06] p-3">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-star" />
-          <p className="text-[11px] leading-relaxed text-star/80">
-            {t('settings.tip')}
-          </p>
+          <p className="text-[11px] leading-relaxed text-star/80">{t('settings.tip')}</p>
         </div>
       </div>
     </Dialog>
