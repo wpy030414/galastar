@@ -260,21 +260,32 @@ export function Dialog({
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
+  // onClose 基本都是内联箭头函数，每次渲染都是新引用。
+  // 把它放进 ref 而不是 effect 依赖 —— 否则面板里每敲一个字触发重渲染，
+  // effect 就会重跑一遍、把焦点从输入框抢到面板上（表现为输入被打断）。
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose()
+        closeRef.current()
       }
     }
     document.addEventListener('keydown', onKey)
-    const timer = window.setTimeout(() => ref.current?.focus(), 20)
+    // 只负责「打开时把焦点收进面板」；面板内已有元素拿到焦点（如 autoFocus 的输入框）就不抢
+    const timer = window.setTimeout(() => {
+      const box = ref.current
+      if (!box || box.contains(document.activeElement)) return
+      box.focus()
+    }, 20)
     return () => {
       document.removeEventListener('keydown', onKey)
       window.clearTimeout(timer)
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
