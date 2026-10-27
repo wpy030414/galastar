@@ -195,7 +195,23 @@
 
 ---
 
-## 8. 远程素材
+## 8. 背景素材：静态、动态与视频
+
+背景是一层 CSS `background-image`（`background-size: cover`，舞台 1280×720）。能用什么、不能用什么，都由这一条决定：
+
+- **静态图**：png / jpg / webp / avif / svg，最常用。
+- **动态图**：GIF、动态 WebP / AVIF 直接可用，浏览器自己循环。画面按 `cover` 裁切，所以也按 16:9 出画最稳。
+- **视频**：mp4 / m4v / mov / webm / ogv 也能当背景。播放器会在背景层里挂一个 `<video>`（静音 + 循环 + `playsinline`），自动播放、按 `object-fit: cover` 裁切；`asset add clip.mp4 --kind background` 即可。
+- **视频只能当背景**。塞给立绘（`sprite`）或音频（`bgm` / `sfx` / `voice`）会被 `E_ASSET_MEDIA_UNSUPPORTED` 拦下——立绘走 `<img>`、声音走 `<audio>`，视频进去只会是空的。
+- **同一背景跨帧推进不会重播**：播放器只在背景 id 真的变了的时候才重写图层，动图和视频都接着走；换背景才从头来。编辑器里定格、读档同理。
+- 没有暂停、只播一次、跟语音对齐这类控制，动态素材会一直循环——别把它当成「一次性演出」。
+- 体积上 GIF 通常比动态 WebP 大好几倍，能转就转；视频更大，注意首屏加载。
+- 编码要浏览器认：H.264 的 mp4 与 VP8 / VP9 的 webm 最稳，HEVC、部分 AV1 组合可能放不出来。
+- `serve` 是本机亲眼看动态素材的方式。`shot` 在 headless 里定格：实测动图不会往前走、视频能停在某一帧，所以截图只代表「那一刻」，不能拿来验收动态效果。
+
+---
+
+## 9. 远程素材
 
 素材已经在 CDN / 图床上时，不必下载到 `assets/`：
 
@@ -225,7 +241,7 @@ galastar asset add --url https://cdn.example.com/bg/hall.png --kind background -
 - 同一个链接重复添加是幂等的，远程与本地素材可以混用。
 - `validate` 只检查格式与引用，不联网；链接是否真的可访问，要靠 `shot` 或 `serve` 看画面。
 
-## 9. 常见错误对照表
+## 10. 常见错误对照表
 
 | 校验 code                 | 常见原因                                 | 怎么修                          |
 | ------------------------- | ---------------------------------------- | ------------------------------- |
@@ -240,6 +256,7 @@ galastar asset add --url https://cdn.example.com/bg/hall.png --kind background -
 | `E_ASSET_FILE_MISSING`    | `assets/` 里没有对应文件                 | 把文件放进去，或 `asset add`    |
 | `E_ASSET_FILENAME_UNSAFE` | fileName 带路径 / 中文标点以外的特殊字符 | 用 `asset add` 生成             |
 | `E_ASSET_URL_INVALID`     | 远程链接不是 http(s)                     | 改成 `http://` / `https://`     |
+| `E_ASSET_MEDIA_UNSUPPORTED` | 视频塞给了立绘 / 音频，或音频当背景    | 改 `kind`，或换素材             |
 | `W_ASSET_FILE_MISSING`    | 还没画素材，先写了引用                   | 打包前补上，否则 `build` 会失败 |
 | `W_FLAG_UNDECLARED`       | `requires` 用了没声明的变量              | 在 `flags` 里声明初始值         |
 | `W_TRANSFORM_CLAMPED`     | scale / offset 超出范围                  | 缩回 20–300 / ±640 / ±400       |
@@ -247,7 +264,7 @@ galastar asset add --url https://cdn.example.com/bg/hall.png --kind background -
 
 ---
 
-## 10. 写作与校验节奏
+## 11. 写作与校验节奏
 
 1. 先写 3–5 帧，`validate` 一次——早期修结构比写完 200 帧再修便宜。
 2. 每加一个场景就补一条入口（choice / jump / end.next），避免 `W_UNREACHABLE_SCENE`。

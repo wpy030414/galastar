@@ -228,6 +228,7 @@ Playwright 缓存（`%LOCALAPPDATA%/ms-playwright` 等）。找不到时退出�
 | `E_CHOICE_EMPTY` / `E_CHOICE_DEADLOCK`                                                               | 无选项 / 全部带条件                             |
 | `E_ASSET_UNKNOWN`                                                                                    | 引用了不存在的素材                              |
 | `E_ASSET_KIND_MISMATCH`                                                                              | 素材类型与引用位置不符                          |
+| `E_ASSET_MEDIA_UNSUPPORTED`                                                                          | 文件媒体与 kind 不匹配（视频只能当 background） |
 | `E_CHARACTER_MISSING` / `E_EXPRESSION_MISSING`                                                       | 立绘槽位断链                                    |
 | `E_ASSET_FILENAME_UNSAFE` / `E_ASSET_FILENAME_DUP`                                                   | 文件名不安全 / 重复                             |
 | `E_ASSET_FILE_MISSING`                                                                               | 本地素材在 `assets/` 里没有文件（远程素材跳过） |

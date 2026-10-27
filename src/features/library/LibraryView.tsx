@@ -14,6 +14,7 @@ import {
 import { importProjectFile } from '@/lib/pack'
 import { formatDate, timeAgo } from '@/lib/utils'
 import { uid } from '@/lib/pure'
+import { isVideoAsset } from '@/lib/assets'
 import { useI18n, type I18n } from '@/i18n'
 import { Button, Dialog, EmptyState, Field, Input, Menu, MenuItem, useToast } from '@/components/ui'
 
@@ -337,6 +338,10 @@ function ProjectCard({
   const i18n = useI18n()
   const { t } = i18n
   const hue = useMemo(() => hashHue(project.meta.id), [project.meta.id])
+  /* 标题背景可能是视频，那就用 <video> 当封面，别拿 <img> 硬套 */
+  const coverVideo = isVideoAsset(
+    project.assets.find((asset) => asset.id === project.meta.title.background),
+  )
   const initial = project.meta.name.trim().slice(0, 1) || 'G'
 
   return (
@@ -352,11 +357,22 @@ function ProjectCard({
           }}
         >
           {cover ? (
-            <img
-              src={cover}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover opacity-80"
-            />
+            coverVideo ? (
+              <video
+                src={cover}
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 h-full w-full object-cover opacity-80"
+              />
+            ) : (
+              <img
+                src={cover}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover opacity-80"
+              />
+            )
           ) : (
             <div className="absolute inset-0 starfield opacity-45" />
           )}

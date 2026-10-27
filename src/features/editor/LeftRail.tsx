@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import type { AssetKind, Character } from '@/lib/types'
-import { ASSET_KINDS, ASSET_META } from '@/lib/assets'
+import { ASSET_KINDS, ASSET_META, isVideoAsset } from '@/lib/assets'
 import { useEditor } from '@/store/editor'
 import { useI18n } from '@/i18n'
 import { cn, formatBytes } from '@/lib/utils'
@@ -304,7 +304,7 @@ function AssetLibrary() {
           ref={inputRef}
           type="file"
           multiple
-          accept={kind === 'background' || kind === 'sprite' ? 'image/*' : 'audio/*'}
+          accept={ASSET_META[kind].accept}
           className="hidden"
           onChange={async (e) => {
             await upload(Array.from(e.target.files ?? []))
@@ -335,7 +335,9 @@ function AssetLibrary() {
                   isImage ? 'aspect-[16/10]' : 'h-14',
                 )}
               >
-                {isImage ? (
+                {isVideoAsset(asset) ? (
+                  <Clapperboard className="h-5 w-5 text-primary/50" />
+                ) : isImage ? (
                   <img
                     src={assetUrls[asset.id]}
                     alt={asset.name}

@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Ban, Check, ChevronDown, Image as ImageIcon, Music, Plus, Upload } from 'lucide-react'
+import {
+  Ban,
+  Check,
+  ChevronDown,
+  Clapperboard,
+  Image as ImageIcon,
+  Music,
+  Plus,
+  Upload,
+} from 'lucide-react'
 import type { AssetKind } from '@/lib/types'
-import { ASSET_META } from '@/lib/assets'
+import { ASSET_META, isVideoAsset } from '@/lib/assets'
 import { useEditor } from '@/store/editor'
 import { useI18n } from '@/i18n'
 import { cn, formatBytes } from '@/lib/utils'
 import { Button } from '@/components/ui'
-
-const ACCEPT: Record<AssetKind, string> = {
-  background: 'image/*',
-  sprite: 'image/*',
-  bgm: 'audio/*',
-  sfx: 'audio/*',
-  voice: 'audio/*',
-}
 
 const PANEL_WIDTH = 300
 
@@ -55,6 +56,7 @@ export function AssetPicker({
   )
   const current = assets.find((a) => a.id === value) ?? null
   const isImage = kind === 'background' || kind === 'sprite'
+  const isVideo = isVideoAsset(current)
   const meta = ASSET_META[kind]
   const { t } = useI18n()
 
@@ -110,7 +112,16 @@ export function AssetPicker({
         )}
       >
         {current ? (
-          isImage ? (
+          isVideo ? (
+            <span
+              className={cn(
+                'flex shrink-0 items-center justify-center rounded bg-foreground/[0.06]',
+                compact ? 'h-5 w-8' : 'h-6 w-10',
+              )}
+            >
+              <Clapperboard className="h-3 w-3 text-primary/70" />
+            </span>
+          ) : isImage ? (
             <img
               src={assetUrls[current.id]}
               alt=""
@@ -178,7 +189,7 @@ export function AssetPicker({
               <input
                 ref={inputRef}
                 type="file"
-                accept={ACCEPT[kind]}
+                accept={ASSET_META[kind].accept}
                 multiple
                 className="hidden"
                 onChange={async (e) => {
@@ -223,11 +234,17 @@ export function AssetPicker({
                             : 'border-border/60 hover:border-border',
                         )}
                       >
-                        <img
-                          src={assetUrls[asset.id]}
-                          alt={asset.name}
-                          className="h-full w-full object-cover"
-                        />
+                        {isVideoAsset(asset) ? (
+                          <span className="flex h-full w-full items-center justify-center bg-foreground/[0.06]">
+                            <Clapperboard className="h-4 w-4 text-primary/60" />
+                          </span>
+                        ) : (
+                          <img
+                            src={assetUrls[asset.id]}
+                            alt={asset.name}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
                         {value === asset.id ? (
                           <span className="absolute right-1 top-1 rounded-full bg-primary p-0.5">
                             <Check className="h-2.5 w-2.5 text-primary-foreground" />

@@ -91,7 +91,7 @@ my-story/
 | `speaker`    | `{ characterId, name }`                              | `{null, ""}`    | `characterId` 命中角色时显示角色名；否则用 `name`；都为空即旁白 |
 | `innerVoice` | boolean                                              | false           | 心理活动：不显示名牌。有 `characterId` 只亮那人，没有则全场压暗 |
 | `text`       | string                                               | `""`            | 台词正文，支持换行                                              |
-| `bg`         | string \| null                                       | 上一句的 bg     | 背景素材 id                                                     |
+| `bg`         | string \| null                                       | 上一句的 bg     | 背景素材 id（图片 / GIF / 动态 WebP / 视频都行）                                                     |
 | `bgm`        | string \| null                                       | 上一句的 bgm    | 音乐素材 id                                                     |
 | `sfx`        | string \| null                                       | null            | 本句点击时播放一次的音效                                        |
 | `voice`      | string \| null                                       | null            | 本句语音                                                        |
@@ -279,11 +279,12 @@ interface Condition {
 - `fileName` 必须唯一，且不能含 `/`、`\`、`..`、盘符或控制字符。
 - 命名规则（`src/lib/asset-names.ts`）：`<前缀>-<slug>.<ext>`，
   前缀分别是 `bg-` / `sprite-` / `bgm-` / `voice-` / `sfx-`；重名依次加 `-2`、`-3`。
-- 运行时**不读** `mime` / `size` / `width` / `height`，它们只服务编辑器与排错。
+- 运行时只读 `mime`（判断背景是图片还是视频）；`size` / `width` / `height` 只服务编辑器与排错。
 - 引用关系（必须成立）：
   - `bg` → `background`，`bgm` → `bgm`，`sfx` → `sfx`，`voice` → `voice`
   - `meta.title.background` → `background`
   - `character.sprites.*`、`cast.*.expression` 指向的素材 → `sprite`
+- 视频（mp4 / m4v / mov / webm / ogv）只能配 `background`，其余 kind 会报 `E_ASSET_MEDIA_UNSUPPORTED`。
 
 ### 远程素材（`url`）
 

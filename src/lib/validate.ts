@@ -43,6 +43,35 @@ const TRANSITIONS = ['cut', 'fade', 'dissolve', 'flash', 'rise']
 const OPS = ['==', '!=', '>', '>=', '<', '<=']
 const SLOTS = ['left', 'center', 'right'] as const
 const RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i
+const IMAGE_FILE = /\.(png|jpe?g|webp|gif|svg|avif)$/i
+const VIDEO_FILE = /\.(mp4|m4v|mov|webm|ogv)$/i
+const AUDIO_FILE = /\.(mp3|ogg|oga|wav|m4a|flac|aac)$/i
+
+type Media = 'image' | 'video' | 'audio'
+
+/** 素材文件是哪一类媒体：先看 mime，老工程的 mime 不准时再看扩展名 */
+function mediaKindOf(mime: unknown, fileName: unknown): Media | null {
+  if (typeof mime === 'string') {
+    if (mime.startsWith('image/')) return 'image'
+    if (mime.startsWith('video/')) return 'video'
+    if (mime.startsWith('audio/')) return 'audio'
+  }
+  if (typeof fileName === 'string') {
+    if (IMAGE_FILE.test(fileName)) return 'image'
+    if (VIDEO_FILE.test(fileName)) return 'video'
+    if (AUDIO_FILE.test(fileName)) return 'audio'
+  }
+  return null
+}
+
+/** 立绘只走 <img>、音频只走 <audio>，只有背景能吃视频 */
+const ALLOWED_MEDIA: Record<AssetKind, Media[]> = {
+  background: ['image', 'video'],
+  sprite: ['image'],
+  bgm: ['audio'],
+  voice: ['audio'],
+  sfx: ['audio'],
+}
 
 const isObj = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v)
 const isStr = (v: unknown): v is string => typeof v === 'string'
@@ -197,6 +226,16 @@ export function validateProject(raw: unknown, opts: ValidateOptions = {}): Valid
     assetById.set(value.id, value)
     if (!ASSET_KINDS.includes(value.kind as AssetKind))
       c.error('E_BAD_ENUM', `${path}.kind`, `kind 必须是 ${ASSET_KINDS.join(' / ')}`)
+    else {
+      const media = mediaKindOf(value.mime, value.fileName)
+      if (media && !ALLOWED_MEDIA[value.kind as AssetKind].includes(media))
+        c.error(
+          'E_ASSET_MEDIA_UNSUPPORTED',
+          path,
+          `素材类型与 kind 不匹配：${String(value.fileName)} 是 ${media}，kind 却是 ${String(value.kind)}`,
+          'background 可以吃图片与视频；sprite 只吃图片；bgm / sfx / voice 只吃音频',
+        )
+    }
     /* 远程素材：只认 http(s)，且不要求本地文件存在 */
     const remote = value.url != null
     if (remote && !isHttpUrl(value.url))

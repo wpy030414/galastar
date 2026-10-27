@@ -11,7 +11,7 @@
 ;(function (global) {
   'use strict'
 
-  var VERSION = '2.1.0'
+  var VERSION = '2.2.0'
   var SLOTS = ['left', 'center', 'right']
   /* 立绘摆放的兜底值：v2.0.1 之前的作品没有 transform 字段 */
   var DEFAULT_TRANSFORM = { scale: 100, offsetX: 0, offsetY: 0 }
@@ -499,6 +499,12 @@
     return asset ? asset.path : ''
   }
 
+  /* 背景要区分图片和视频，所以连 mime 一起取出来 */
+  Stage.prototype.assetInfo = function (id) {
+    var asset = id && this.payload.assets ? this.payload.assets[id] : null
+    return asset ? { path: asset.path, mime: asset.mime || '' } : null
+  }
+
   Stage.prototype.sceneName = function (id) {
     var scene = this.sceneMap[id]
     return scene ? scene.name : ''
@@ -598,11 +604,13 @@
     this.app.classList.remove('gs-choosing')
     this.dialog.style.display = ''
 
-    /* 背景 */
-    var bgPath = this.assetPath(frame.bg)
-    if (this.currentBg !== frame.bg || instant) {
+    /*
+     * 背景：只有换图才动图层。同一背景跨帧推进（含编辑器定格、读档）时
+     * 完全不碰背景层，动态背景才会接着循环，而不是每次从头重播。
+     */
+    if (this.currentBg !== frame.bg) {
       this.currentBg = frame.bg
-      this.swapBackground(bgPath, transition, instant)
+      this.swapBackground(this.assetInfo(frame.bg), transition, instant)
     }
 
     /* 立绘 */
@@ -682,8 +690,11 @@
     this.dialog.dataset.hasName = 'false'
     /* 选择支沿用上一帧的舞台，避免黑屏 */
     if (prev) {
-      this.currentBg = prev.bg
-      this.swapBackground(this.assetPath(prev.bg), 'cut', true)
+      /* 背景没变就别重提一次：动态背景会在选项出现的那一刻重播 */
+      if (this.currentBg !== prev.bg) {
+        this.currentBg = prev.bg
+        this.swapBackground(this.assetInfo(prev.bg), 'cut', true)
+      }
       this.applyCast(prev, 'cut', true)
       this.dialog.style.display = ''
       this.textBox.textContent = frame.prompt || ''
@@ -762,6 +773,80 @@
     return out
   }
 
+  /**
+   * 背景层只在 URL 真的变了的时候才重写 background-image。
+   * 把同一张图重新写进 style 等于重新提交一次图层内容：动态背景
+   * （GIF / 动态 WebP）可能因此从头播，至少也要重新解码。这里记住上次
+   * 写进去的 URL，没变就一个字节都不写——同一背景跨帧推进时，
+   * 循环交给浏览器接着走。
+   */
+  function setBgImage(node, path) {
+    var url = path ? 'url("' + path + '")' : 'none'
+    if (node.gsBgUrl === url) return
+    node.gsBgUrl = url
+    node.style.backgroundImage = url
+  }
+
+  /*
+   * 背景也可以是视频。视频没有 background-image 这条路，只能在图层里挂 <video>；
+   * 静音 + 循环 + playsinline 是浏览器允许自动播放的前提。
+   */
+  function isVideoAsset(asset) {
+    if (!asset) return false
+    if (typeof asset.mime === 'string' && asset.mime.indexOf('video/') === 0) return true
+    var path = String(asset.path || '').split('?')[0].split('#')[0]
+    return /\.(mp4|m4v|mov|webm|ogv)$/i.test(path)
+  }
+
+  function playBgMedia(layer) {
+    var video = layer && layer.gsVideo
+    if (!video || !layer.gsVideoOn || !video.getAttribute('src')) return
+    var started = video.play()
+    /* 自动播放被拦住时不该炸掉整段渲染，吞掉 Promise 的拒绝就行 */
+    if (started && typeof started.catch === 'function') started.catch(function () {})
+  }
+
+  function pauseBgMedia(layer) {
+    var video = layer && layer.gsVideo
+    if (video && !video.paused) video.pause()
+  }
+
+  /**
+   * 往一个背景图层里放内容：图片走 background-image，视频挂 <video>。
+   * 同一个地址不重复提交——动态图和视频都要接着播，而不是从头来。
+   */
+  function setBgMedia(layer, asset) {
+    var path = asset && asset.path ? asset.path : ''
+    var video = layer.gsVideo
+    if (path && isVideoAsset(asset)) {
+      if (!video) {
+        video = document.createElement('video')
+        video.className = 'gs-bg-video'
+        video.muted = true
+        video.defaultMuted = true
+        video.loop = true
+        video.setAttribute('muted', '')
+        video.setAttribute('playsinline', '')
+        video.setAttribute('webkit-playsinline', '')
+        video.setAttribute('preload', 'auto')
+        video.setAttribute('aria-hidden', 'true')
+        layer.appendChild(video)
+        layer.gsVideo = video
+      }
+      if (video.getAttribute('src') !== path) video.setAttribute('src', path)
+      video.style.display = ''
+      layer.gsVideoOn = true
+      setBgImage(layer, '')
+      return
+    }
+    if (video) {
+      video.pause()
+      video.style.display = 'none'
+    }
+    layer.gsVideoOn = false
+    setBgImage(layer, path)
+  }
+
   Stage.prototype.applyCast = function (frame, transition, instant) {
     var self = this
     var speakerId = frame.speaker && frame.speaker.characterId
@@ -811,23 +896,27 @@
     })
   }
 
-  Stage.prototype.swapBackground = function (path, transition, instant) {
+  Stage.prototype.swapBackground = function (asset, transition, instant) {
     var self = this
     var next = this.bgActive === 'a' ? this.bgB : this.bgA
     var prev = this.bgActive === 'a' ? this.bgA : this.bgB
+    var path = asset && asset.path ? asset.path : ''
 
     if (instant || !path || transition === 'cut') {
       next.style.transition = 'none'
-      next.style.backgroundImage = path ? 'url("' + path + '")' : 'none'
+      setBgMedia(next, asset)
       next.style.opacity = path ? '1' : '0'
       next.style.transform = 'none'
       prev.style.opacity = '0'
+      if (path) playBgMedia(next)
+      else pauseBgMedia(next)
+      pauseBgMedia(prev)
       this.bgActive = this.bgActive === 'a' ? 'b' : 'a'
       return
     }
 
     next.style.transition = 'none'
-    next.style.backgroundImage = 'url("' + path + '")'
+    setBgMedia(next, asset)
     next.style.opacity = '0'
     next.style.transform =
       transition === 'rise'
@@ -847,6 +936,12 @@
     next.style.transform = 'scale(1)'
     prev.style.transition = 'opacity 480ms ease'
     prev.style.opacity = '0'
+    playBgMedia(next)
+    /* 淡出结束后才暂停，免得交叉渐变里出现定格画面 */
+    global.setTimeout(function () {
+      var inactive = self.bgActive === 'a' ? self.bgB : self.bgA
+      if (inactive === prev) pauseBgMedia(prev)
+    }, 900)
     this.bgActive = this.bgActive === 'a' ? 'b' : 'a'
     this.emit('bg', { path: path })
   }
@@ -1085,6 +1180,8 @@
       this.openingLayer.style.display = 'none'
       this.resetLayerFx(this.openingLayer)
     }
+    pauseBgMedia(this.titleBg)
+    pauseBgMedia(this.openingBg)
     this.app.classList.remove('gs-layer-open')
   }
 
@@ -1165,8 +1262,9 @@
     this.titleName.textContent = meta.name || this.text('player.untitledWork')
     this.titleSub.textContent = (meta.title && meta.title.subtitle) || ''
     this.titleFoot.textContent = [meta.author, meta.version].filter(Boolean).join(' · ')
-    var bg = meta.title && meta.title.background ? this.assetPath(meta.title.background) : ''
-    this.titleBg.style.backgroundImage = bg ? 'url("' + bg + '")' : 'none'
+    var bgId = meta.title && meta.title.background ? meta.title.background : null
+    setBgMedia(this.titleBg, this.assetInfo(bgId))
+    playBgMedia(this.titleBg)
     var saves = this.readSaves()
     this.btnContinue.style.display = saves.length ? '' : 'none'
   }
@@ -1293,9 +1391,9 @@
     this.view.running = true
 
     var first = this.firstLineOf(scene)
-    var bg = first ? this.assetPath(first.bg) : ''
     this.openingTitle.textContent = scene.name || ''
-    this.openingBg.style.backgroundImage = bg ? 'url("' + bg + '")' : 'none'
+    setBgMedia(this.openingBg, this.assetInfo(first ? first.bg : null))
+    playBgMedia(this.openingBg)
 
     this.openingLayer.style.display = 'flex'
     this.openingLayer.style.transition = 'none'
@@ -1339,6 +1437,7 @@
     this.timers.fade = global.setTimeout(function () {
       self.openingLayer.style.display = 'none'
       self.resetLayerFx(self.openingLayer)
+      pauseBgMedia(self.openingBg)
       self.view.opening = null
       self.view.busy = false
       self.releaseHeld()
@@ -1905,6 +2004,13 @@
         a.removeAttribute('src')
       }
     }, this)
+    ;[this.bgA, this.bgB, this.titleBg, this.openingBg].forEach(function (layer) {
+      var video = layer && layer.gsVideo
+      if (!video) return
+      video.pause()
+      video.removeAttribute('src')
+      if (typeof video.load === 'function') video.load()
+    })
     ;(this.disposers || []).forEach(function (fn) {
       try {
         fn()

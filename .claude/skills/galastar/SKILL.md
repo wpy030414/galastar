@@ -147,6 +147,9 @@ node bin/galastar.mjs serve my-story --port 4173
 - 不引入剧本 DSL：故事的事实来源就是 `project.json`。
 - 不碰 `src/lib/db.ts`（IndexedDB）与浏览器存储；CLI 只认文件。
 - 远程素材只写 URL，不下载、不打包；离线可玩的作品请用本地素材。
+- 背景可以是图片、GIF / 动态图，也可以是视频（mp4 / m4v / mov / webm / ogv）：视频挂在
+  背景层的 `<video>` 上，静音循环自动播放，同一背景跨帧推进不重播。视频只能当背景，
+  其它 kind 会被 `E_ASSET_MEDIA_UNSUPPORTED` 拦下。
 - 不把 `dist/`、`.galastar/`、截图提交进仓库（`init` 已写好 `.gitignore`）。
 - 播放器运行时是 `public/engine/runtime.js`，零依赖 classic script；改它要单独评估兼容性。
 

@@ -35,6 +35,11 @@ const MIME: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/x-m4v',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.ogv': 'video/ogg',
   '.svg': 'image/svg+xml',
   '.mp3': 'audio/mpeg',
   '.ogg': 'audio/ogg',
@@ -74,15 +79,21 @@ function renderShotHtml(query: ShotQuery): string {
           document.documentElement.dataset.galastarReady = '1'
         }
         var ticks = 0
-        function waitImages() {
+        /* 视频背景要等它出画，否则截到的是黑帧 */
+        function waitMedia() {
           ticks += 1
           var images = document.querySelectorAll('img')
+          var videos = document.querySelectorAll('.gs-bg-video')
           var pending = 0
           for (var i = 0; i < images.length; i += 1) if (!images[i].complete) pending += 1
-          if (pending > 0 && ticks < 200) return setTimeout(waitImages, 50)
+          for (var j = 0; j < videos.length; j += 1) {
+            if (videos[j].style.display === 'none') continue
+            if (videos[j].readyState < 2) pending += 1
+          }
+          if (pending > 0 && ticks < 200) return setTimeout(waitMedia, 50)
           setTimeout(markReady, 250)
         }
-        setTimeout(waitImages, 30)
+        setTimeout(waitMedia, 30)
       })()
     </script>
   </body>

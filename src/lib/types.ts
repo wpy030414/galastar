@@ -231,6 +231,8 @@ export interface RuntimeAsset {
   /** 相对路径（导出）或 blob: URL（预览） */
   path: string
   name: string
+  /** 背景要区分图片与视频，播放器据此决定用 background-image 还是 <video> */
+  mime?: string
 }
 
 export interface RuntimePayload {

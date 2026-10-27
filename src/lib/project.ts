@@ -224,7 +224,12 @@ export function buildPayload(
 ): RuntimePayload {
   const assets: Record<string, RuntimeAsset> = {}
   project.assets.forEach((asset) => {
-    assets[asset.id] = { kind: asset.kind, path: resolvePath(asset.id), name: asset.name }
+    assets[asset.id] = {
+      kind: asset.kind,
+      path: resolvePath(asset.id),
+      name: asset.name,
+      mime: asset.mime,
+    }
   })
   const characters: RuntimePayload['characters'] = {}
   project.characters.forEach((c) => {

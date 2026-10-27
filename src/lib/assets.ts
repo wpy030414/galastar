@@ -16,7 +16,7 @@ export const ASSET_META: Record<
 > = {
   background: {
     labelKey: 'asset.background',
-    accept: 'image/*',
+    accept: 'image/*,video/*',
     hintKey: 'asset.background.hint',
   },
   sprite: {
@@ -52,6 +52,13 @@ async function imageSize(blob: Blob): Promise<{ width: number; height: number } 
   } catch {
     return null
   }
+}
+
+/** 背景也可以是视频：浏览器只给 background 这一路挂 <video> */
+export function isVideoAsset(asset: AssetRecord | null | undefined): boolean {
+  if (!asset) return false
+  if (asset.mime.startsWith('video/')) return true
+  return /\.(mp4|m4v|mov|webm|ogv)$/i.test(asset.fileName)
 }
 
 /** 把一个 File 变成作品资产：写 Blob 进 IndexedDB，返回元信息 */
@@ -135,6 +142,7 @@ export function revokeAssetUrls(urls: Record<string, string>) {
 
 export function kindOfFile(file: File): AssetKind {
   if (file.type.startsWith('image/')) return 'sprite'
+  if (file.type.startsWith('video/')) return 'background'
   if (file.type.startsWith('audio/')) return 'bgm'
   return 'sfx'
 }

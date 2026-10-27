@@ -28,6 +28,9 @@ const TXT = {
   b1: '第二幕的第一句。',
   b2: '第二幕的第二句。',
   c1: '第三幕的收尾。',
+  g1: '海边这一句。',
+  g2: '还是海边。',
+  g3: '灯亮起来了。',
 }
 
 /* 立绘摆放的默认值：帧上的 transform 必须给全，播放器会按范围裁剪 */
@@ -65,6 +68,14 @@ const end = (id, title, next) => ({
 const BLANK_PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 
+/*
+ * 两帧（红 / 蓝）、每帧 500ms、无限循环的最小动态 GIF。
+ * 播放器只把它当 CSS 背景图用，测试断言的是「背景层有没有被重写」，
+ * 而不是像素——所以 2×2 足够。
+ */
+const LOOP_GIF =
+  'data:image/gif;base64,R0lGODlhAgACAPEAAP8AAAAA/wAAAP///yH/C05FVFNDQVBFMi4wAwEAAAAh+QQEMgAAACwAAAAAAgACAAACBARBEAUAIfkEBDIAAAAsAAAAAAIAAgAAAgQMwzAFADs='
+
 const DATA = {
   format: 'galastar/2',
   meta: {
@@ -87,6 +98,18 @@ const DATA = {
   assets: {
     a_sp_a: { kind: 'sprite', path: BLANK_PNG, name: 'A.png' },
     a_sp_b: { kind: 'sprite', path: BLANK_PNG, name: 'B.png' },
+    a_bg_loop: { kind: 'background', path: LOOP_GIF, name: 'loop.gif' },
+    a_bg_alt: { kind: 'background', path: BLANK_PNG, name: 'alt.png' },
+    /*
+     * 视频背景只验接线（挂 <video>、属性、不重提），不验解码：
+     * 路径故意指向测试站里不存在的文件，加载失败不影响 DOM 断言。
+     */
+    a_bg_video: {
+      kind: 'background',
+      path: 'media/clip.webm',
+      name: 'clip.webm',
+      mime: 'video/webm',
+    },
   },
   scenes: [
     {
@@ -103,6 +126,44 @@ const DATA = {
       id: 'scene-c',
       name: '第三幕 · 测试',
       frames: [line('c1', TXT.c1), end('ec', '结局 · 测试', null)],
+    },
+    /*
+     * 动态背景：前两句用同一张 GIF，第三帧是选择支（同样沿用这张），
+     * 再用 scene-bg-alt 验「真的换背景时仍然要重写」。
+     */
+    {
+      id: 'scene-bg',
+      name: '动态背景 · 测试',
+      frames: [
+        line('bg-1', TXT.g1, { bg: 'a_bg_loop' }),
+        line('bg-2', TXT.g2, { bg: 'a_bg_loop' }),
+        {
+          id: 'bg-choice',
+          type: 'choice',
+          prompt: '要不要换个地方？',
+          options: [
+            { id: 'bg-go', text: '换', target: 'scene-bg-alt', setFlags: {}, requires: null },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'scene-bg-alt',
+      name: '换背景 · 测试',
+      frames: [line('bg-3', TXT.g3, { bg: 'a_bg_alt' })],
+    },
+    /*
+     * 视频背景：前两句同一段视频，第三句换成图片，验「挂 <video>」
+     * 与「换帧不重提」「换图要收掉视频」三件事。
+     */
+    {
+      id: 'scene-vid',
+      name: '视频背景 · 测试',
+      frames: [
+        line('vid-1', TXT.g1, { bg: 'a_bg_video' }),
+        line('vid-2', TXT.g2, { bg: 'a_bg_video' }),
+        line('vid-3', TXT.g3, { bg: 'a_bg_alt' }),
+      ],
     },
     /*
      * 心理活动：台上站两个人，用三种归因把两条规则分开验。
@@ -388,6 +449,85 @@ const DRIVER = String.raw`
     )
     click(q('.gs-log .gs-close'))
     await sleep(160)
+
+    /* ---------------- 动态背景：同一背景跨帧不重播 ---------------- */
+    stage.startFrom('scene-bg', 0)
+    await sleep(260)
+    var bgLayers = document.querySelectorAll('.gs-bg')
+    var activeBg = function () {
+      for (var i = 0; i < bgLayers.length; i++) if (bgLayers[i].style.opacity === '1') return bgLayers[i]
+      return null
+    }
+    check('背景层是两张轮换层', bgLayers.length === 2, bgLayers.length)
+    check(
+      '背景层拿到了 GIF 地址',
+      getComputedStyle(activeBg()).backgroundImage.indexOf('image/gif') !== -1,
+      activeBg() && activeBg().style.backgroundImage.slice(0, 40),
+    )
+    var bgWrites = []
+    var bgObserver = new MutationObserver(function (records) {
+      records.forEach(function (record) { bgWrites.push(record.attributeName) })
+    })
+    Array.prototype.forEach.call(bgLayers, function (layer) {
+      bgObserver.observe(layer, { attributes: true, attributeFilter: ['style'] })
+    })
+    click(q('.gs-dialog'))
+    await sleep(220)
+    check('同背景推进台词不重写背景层', bgWrites.length === 0, bgWrites.length)
+    click(q('.gs-dialog'))
+    await sleep(240)
+    check('进入选择支不重写背景层', bgWrites.length === 0, bgWrites.length)
+    check('选择支已经出现', q('.gs-choice') !== null)
+    stage.showFrame('scene-bg', 1)
+    await sleep(160)
+    check('定格同背景的另一帧不重写背景层', bgWrites.length === 0, bgWrites.length)
+    var writesBefore = bgWrites.length
+    stage.showFrame('scene-bg-alt', 0)
+    await sleep(160)
+    check('换背景仍然重写背景层', bgWrites.length > writesBefore, bgWrites.length - writesBefore)
+    check(
+      '新背景确实换上了',
+      getComputedStyle(activeBg()).backgroundImage.indexOf('image/png') !== -1,
+      activeBg() && activeBg().style.backgroundImage.slice(0, 40),
+    )
+    bgObserver.disconnect()
+
+    /* ---------------- 视频背景：挂 <video>、换帧不重提 ---------------- */
+    stage.startFrom('scene-vid', 0)
+    await sleep(320)
+    var vidNode = document.querySelector('.gs-bg-video')
+    check('视频背景挂上 video 元素', vidNode !== null)
+    check(
+      '视频静音、循环、内联播放',
+      !!vidNode && vidNode.muted === true && vidNode.loop === true && vidNode.hasAttribute('playsinline'),
+      vidNode ? [vidNode.muted, vidNode.loop, vidNode.hasAttribute('playsinline')].join('/') : 'null',
+    )
+    check(
+      '视频地址来自工程',
+      !!vidNode && String(vidNode.getAttribute('src')).indexOf('clip.webm') !== -1,
+      vidNode && vidNode.getAttribute('src'),
+    )
+    check(
+      '视频层不再铺背景图',
+      activeBg() !== null && activeBg().style.backgroundImage === 'none',
+      activeBg() && activeBg().style.backgroundImage,
+    )
+    var vidWrites = []
+    var vidObserver = new MutationObserver(function (records) {
+      records.forEach(function (record) { vidWrites.push(record.attributeName) })
+    })
+    vidObserver.observe(activeBg(), { attributes: true, attributeFilter: ['style', 'src'] })
+    click(q('.gs-dialog'))
+    await sleep(240)
+    check('同视频推进台词不重提视频', vidWrites.length === 0, vidWrites.length)
+    vidObserver.disconnect()
+    stage.showFrame('scene-vid', 2)
+    await sleep(200)
+    check(
+      '换回图片背景时收掉视频',
+      getComputedStyle(activeBg()).backgroundImage.indexOf('image/png') !== -1 && vidNode.paused === true,
+      (activeBg() ? activeBg().style.backgroundImage.slice(0, 30) : 'null') + ' / paused=' + vidNode.paused,
+    )
 
     finish({ ok: results.every(function (r) { return r.ok }), checks: results })
   }

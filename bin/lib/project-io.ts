@@ -116,7 +116,7 @@ export function listAssetFileNames(source: InputSource, assetsDir: string): Set<
   const names = new Set<string>()
   if (source.kind === 'archive') {
     source.zip?.forEach((zipPath) => {
-      if (!/\.(png|jpe?g|webp|gif|svg|mp3|ogg|m4a|wav|flac)$/i.test(zipPath)) return
+      if (!/\.(png|jpe?g|webp|gif|svg|avif|mp4|m4v|mov|webm|ogv|mp3|ogg|m4a|wav|flac)$/i.test(zipPath))
       names.add(path.posix.basename(zipPath))
     })
     return names
@@ -245,6 +245,7 @@ export function assetIdFor(sha: string, existingIds: Set<string>): string {
 
 export function kindFromMime(mime: string): AssetRecord['kind'] {
   if (mime.startsWith('image/')) return 'sprite'
+  if (mime.startsWith('video/')) return 'background'
   if (mime.startsWith('audio/')) return 'bgm'
   return 'sfx'
 }
