@@ -223,8 +223,8 @@
   }
 
   var DEFAULT_CONFIG = {
-    textSpeed: 34, // 每字毫秒
-    autoDelay: 1200, // 自动播放下句等待
+    textSpeed: 42, // 每字毫秒
+    autoDelay: 1800, // 自动播放下句等待
     bgmVolume: 0.6,
     sfxVolume: 0.8,
     voiceVolume: 1,
@@ -723,6 +723,7 @@
 
   Stage.prototype.pickChoice = function (opt, btn) {
     var self = this
+    this.exitAuto()
     if (btn) btn.classList.add('gs-choice-picked')
     this.choices.classList.add('gs-choice-locked')
     global.setTimeout(function () {
@@ -905,13 +906,25 @@
       wait = Math.max(wait, (voice.duration - (voice.currentTime || 0)) * 1000 + 320)
     }
     this.timers.auto = global.setTimeout(function () {
-      if (self.view.auto && !self.view.waiting) return
+      /* 出字还没完就不推进：停留时长从滚动结束算起，由 finishTyping 重新计时 */
+      if (self.view.typing) return
+      if (!self.view.auto || !self.view.waiting) return
       self.advance()
     }, wait)
   }
 
   Stage.prototype.stopAuto = function () {
     this.clearTimer('auto')
+  }
+
+  /**
+   * 退出自动播放。自动模式下任何手动操作——点击跳过当前句、看记录、
+   * 开设置、点选项——都要走这里。
+   */
+  Stage.prototype.exitAuto = function () {
+    this.view.auto = false
+    this.stopAuto()
+    this.syncToolButtons()
   }
 
   /* ------------------------------------------------------------------ *
@@ -1150,7 +1163,7 @@
 
   Stage.prototype.showTitle = function () {
     if (this.mode === 'edit') return
-    this.stopAuto()
+    this.exitAuto()
     this.audio.bgm.pause()
     this.resetActCards()
     this.view.running = false
@@ -1715,6 +1728,7 @@
       )
         return
       if (self.app.classList.contains('gs-layer-open')) return
+      self.exitAuto()
       self.advance()
     }
     this.frame.addEventListener('click', onFrameClick)
@@ -1727,31 +1741,37 @@
     this.endLayer.addEventListener('click', function (ev) {
       if (self.mode === 'edit' || self.view.busy || !self.view.endNext) return
       ev.stopPropagation()
+      self.exitAuto()
       self.leaveAct()
     })
     this.openingLayer.addEventListener('click', function (ev) {
       if (self.mode === 'edit' || self.view.busy) return
       ev.stopPropagation()
+      self.exitAuto()
       self.dismissOpening()
     })
 
     this.toolButtons.auto.addEventListener('click', function (ev) {
       ev.stopPropagation()
       self.view.auto = !self.view.auto
+      if (!self.view.auto) self.stopAuto()
       self.syncToolButtons()
       if (self.view.auto && self.typeState.done && self.view.running) self.scheduleAuto()
     })
     this.toolButtons.log.addEventListener('click', function (ev) {
       ev.stopPropagation()
+      self.exitAuto()
       self.openLog(false)
     })
     this.toolButtons.save.addEventListener('click', function (ev) {
       ev.stopPropagation()
+      self.exitAuto()
       self.openLayer(self.saveLayer)
       if (self.paintSaves) self.paintSaves()
     })
     this.toolButtons.config.addEventListener('click', function (ev) {
       ev.stopPropagation()
+      self.exitAuto()
       self.openLayer(self.configLayer)
     })
 
@@ -1763,7 +1783,10 @@
         /* 幕末卡 / 幕名卡不能被设置面板顶掉 */
         if (self.view.endCard || self.view.opening) return
         if (self.app.classList.contains('gs-layer-open')) self.closeLayers()
-        else self.openLayer(self.configLayer)
+        else {
+          self.exitAuto()
+          self.openLayer(self.configLayer)
+        }
         return
       }
       if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
@@ -1774,23 +1797,30 @@
           !self.view.opening
         )
           return
+        self.exitAuto()
         self.advance()
         return
       }
       /* 卡片在台前时，其余快捷键让位给「点击继续」 */
       if (self.view.endCard || self.view.opening) return
-      if (key === 'l' || key === 'L') self.openLog(false)
+      if (key === 'l' || key === 'L') {
+        self.exitAuto()
+        self.openLog(false)
+      }
       if (key === 's' || key === 'S') {
+        self.exitAuto()
         self.openLayer(self.saveLayer)
         if (self.paintSaves) self.paintSaves()
       }
       if (key === 'a' || key === 'A') {
         self.view.auto = !self.view.auto
+        if (!self.view.auto) self.stopAuto()
         self.syncToolButtons()
-        if (self.view.auto) self.scheduleAuto()
+        if (self.view.auto && self.typeState.done && self.view.running) self.scheduleAuto()
       }
       if (key === 'f' || key === 'F') self.toggleFullscreen()
       if (key === 'Control') {
+        self.exitAuto()
         self.view.skip = true
         self.syncToolButtons()
         self.applySkipState()
