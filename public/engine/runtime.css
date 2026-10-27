@@ -911,6 +911,13 @@
   line-height: 1.7;
 }
 
+/* 每条记录之间一道浅横线：回看是一格一格的分镜，不该糊成一大块白字。
+ * 用相邻兄弟而不是给每条加 border-bottom，最后一条下面就不会多出一条没收干净的线。 */
+.gs-log-row + .gs-log-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  padding-top: 15px;
+}
+
 .gs-log-name {
   font-size: 17px;
   font-weight: 700;

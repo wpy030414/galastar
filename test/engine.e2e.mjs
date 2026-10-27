@@ -374,7 +374,22 @@ const DRIVER = String.raw`
       ivNames.join('|'),
     )
 
-finish({ ok: results.every(function (r) { return r.ok }), checks: results })
+    /* ---------------- 记录面板的分隔线 ---------------- */
+    click(q('.gs-toolbar [data-key="log"]'))
+    await sleep(160)
+    var rows = document.querySelectorAll('.gs-log-row')
+    check('记录列出本幕三句', rows.length === 3, rows.length)
+    var first = getComputedStyle(rows[0]).borderTopWidth
+    var second = getComputedStyle(rows[1])
+    check(
+      '记录之间有横线、首条上方没有',
+      parseFloat(first) === 0 && second.borderTopStyle === 'solid' && parseFloat(second.borderTopWidth) >= 1,
+      first + ' / ' + second.borderTopStyle + ' ' + second.borderTopWidth,
+    )
+    click(q('.gs-log .gs-close'))
+    await sleep(160)
+
+    finish({ ok: results.every(function (r) { return r.ok }), checks: results })
   }
 
   run().catch(function (error) {
