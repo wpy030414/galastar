@@ -244,16 +244,28 @@ function SkinPreview({ skin, accent }: { skin: UiSkin; accent: string }) {
   if (skin === 'night') {
     return (
       <div className="relative h-[86px] w-full overflow-hidden bg-[linear-gradient(160deg,#1b1a33,#0a0913_60%)]">
-        <div className="absolute left-2 top-2 flex gap-1.5 rounded-full bg-black/45 px-2 py-[3px]">
-          <span className="h-[3px] w-3 rounded-full" style={{ background: `${accent}88` }} />
-          <span className="h-[3px] w-3 rounded-full bg-white/25" />
-          <span className="h-[3px] w-3 rounded-full bg-white/25" />
+        {/* 上下黑幕：上窄下宽，和播放器里那两层渐变一致 */}
+        <div className="absolute inset-x-0 top-0 h-[16px] bg-[linear-gradient(to_bottom,rgba(0,0,0,0.68),transparent)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[40px] bg-[linear-gradient(to_top,#000,rgba(0,0,0,0.66)_56%,transparent)]" />
+        {/* 菜单不包壳：左三右一 */}
+        <div className="absolute left-2 top-2 flex gap-[5px]">
+          <span className="h-[3px] w-[9px] rounded-full bg-white/25" />
+          <span className="h-[3px] w-[9px] rounded-full bg-white/25" />
+          <span className="h-[3px] w-[9px] rounded-full bg-white/25" />
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-[46px] bg-[linear-gradient(to_bottom,transparent,rgba(4,4,9,0.94))]" />
-        <div className="absolute bottom-3 left-3 right-3 space-y-1.5">
-          <span className="block h-[5px] w-10 rounded-full" style={{ background: accent }} />
-          <span className="block h-[4px] w-full rounded-full bg-white/75" />
-          <span className="block h-[4px] w-3/5 rounded-full bg-white/55" />
+        <div className="absolute right-2 top-2">
+          <span className="block h-[3px] w-[9px] rounded-full" style={{ background: `${accent}88` }} />
+        </div>
+        {/* 两栏：左下灰名字 + 主题色竖条，右侧白台词 */}
+        <div className="absolute inset-x-3 bottom-2.5 flex items-start gap-2">
+          <div className="flex w-[32%] items-center gap-[3px] pt-[3px]">
+            <span className="h-[6px] w-[2px] rounded-[1px]" style={{ background: accent }} />
+            <span className="h-[3px] w-full rounded-full bg-white/55" />
+          </div>
+          <div className="flex-1 space-y-[5px] pt-[2px]">
+            <span className="block h-[3px] w-full rounded-full bg-white/90" />
+            <span className="block h-[3px] w-3/5 rounded-full bg-white/70" />
+          </div>
         </div>
       </div>
     )

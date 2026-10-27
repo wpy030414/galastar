@@ -209,9 +209,10 @@
    * 让文字离「隐形菜单」更远，画面重心也更高 */
   bottom: 112px;
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  /* 刻意用 block 而不是 flex column：台词要占满左右宽度才会在对话框内换行，
+   * flex 的 align-items: flex-start 会让 .gs-text 收缩成 max-content，
+   * 长句会直接顶出画面。night 皮肤另起 grid 做两栏，覆盖这里。 */
+  display: block;
   pointer-events: none;
 }
 
@@ -1184,8 +1185,15 @@
 
 /* ================================================================ 皮肤：night
  *
- * 同一套骨架的另一种材质：台词回到一条压暗的底板上、菜单回到右上角、
- * 选项变圆角、画面四角压暗。只重写「材质 + 位置」，结构不动。
+ * 同一套骨架的另一种材质。台词不上底板，直接压在下端的一层黑幕上：
+ *
+ *   · 画面上下各有一层「黑 → 透明」的渐变遮罩，把 CG 的上下沿压进黑里
+ *   · 左下是说话人（灰），右边是台词（白），两栏共一条基线
+ *   · 主题色不再染字，只留在人名左边那根细 bar 上
+ *   · 菜单不包壳：自动在右上角，记录 / 存档 / 设置在左上角，选项是圆角暗条
+ *
+ * 遮罩的高度与衰减曲线是按参考画面量的：上端 104px，前 30% 保持 0.68 再归零；
+ * 下端 214px，越往下压得越狠（先缓后急），亮场景里的白字才站得住。
  */
 
 .gs-app[data-theme='night'] {
@@ -1194,6 +1202,8 @@
   --pgf-stroke: #05050a;
   --pgf-gold: var(--gs-accent);
   --pgf-dim: 0.55;
+  /* 说话人：灰字 + 主题色 bar */
+  --night-name: rgba(255, 255, 255, 0.6);
 }
 
 .gs-app[data-theme='night'] .gs-vignette {
@@ -1202,30 +1212,42 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  background:
-    radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(0, 0, 0, 0.42) 100%),
+  background-image:
     linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.3) 0%,
-      transparent 22%,
-      transparent 58%,
-      rgba(0, 0, 0, 0.62) 100%
+      rgba(0, 0, 0, 0.68) 0%,
+      rgba(0, 0, 0, 0.68) 29%,
+      rgba(0, 0, 0, 0) 100%
+    ),
+    linear-gradient(
+      to top,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 0.96) 20%,
+      rgba(0, 0, 0, 0.92) 38%,
+      rgba(0, 0, 0, 0.66) 52%,
+      rgba(0, 0, 0, 0.4) 62%,
+      rgba(0, 0, 0, 0.24) 71%,
+      rgba(0, 0, 0, 0.1) 80%,
+      rgba(0, 0, 0, 0) 100%
     );
+  background-repeat: no-repeat;
+  background-position: top center, bottom center;
+  background-size:
+    100% 104px,
+    100% 214px;
 }
 
+/* 名字一栏 240px 定宽，台词接在后面 —— 说话人换行时台词不会左右跳。
+ * align-items: baseline 让 30px 的名字和 24px 的首行共用一条基线。 */
 .gs-app[data-theme='night'] .gs-dialog {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 0 96px 54px;
-  min-height: 250px;
-  justify-content: flex-end;
-  background: linear-gradient(
-    to bottom,
-    rgba(6, 6, 12, 0) 0%,
-    rgba(6, 6, 12, 0.68) 30%,
-    rgba(4, 4, 9, 0.93) 100%
-  );
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: baseline;
+  padding: 0 160px 30px 140px;
+  background: none;
 }
 
 .gs-app[data-theme='night'] .gs-dialog::before {
@@ -1233,63 +1255,76 @@
 }
 
 .gs-app[data-theme='night'] .gs-name {
-  margin-bottom: 12px;
-  font-size: 25px;
-  letter-spacing: 0.06em;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--night-name);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85);
 }
 
+/* 主题色唯一的落点：名字左边一根 3px 细条。
+ * 颜色取角色自己的色（--gs-name-color），没有就退回落主题色。 */
 .gs-app[data-theme='night'] .gs-name::before {
   content: '';
-  width: 6px;
-  height: 19px;
+  position: absolute;
+  left: -17px;
+  top: 50%;
+  width: 3px;
+  height: 20px;
   border: 0;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: 0 0 16px currentColor;
+  border-radius: 2px;
+  background: var(--gs-name-color, var(--gs-accent));
+  box-shadow: 0 0 12px -2px var(--gs-name-color, var(--gs-accent));
+  transform: translateY(-50%);
+  text-shadow: none;
   filter: none;
 }
 
 .gs-app[data-theme='night'] .gs-name-text {
-  color: var(--gs-name-color, var(--gs-accent));
+  color: inherit;
 }
 
 .gs-app[data-theme='night'] .gs-text {
-  font-size: 27px;
-  line-height: 1.62;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  color: #f4f2ff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 24px;
+  line-height: 31px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
+/* 继续提示整个不要：句尾圆点是 PGF 的语汇，右下角的 ▼ 也去掉，
+ * night 的画面到台词为止，不留别的东西。 */
 .gs-app[data-theme='night'] .gs-text.gs-done::after {
-  content: '▼';
-  font-size: 13px;
-  margin-left: 8px;
-  vertical-align: 3px;
-  color: var(--gs-accent);
-  animation: gs-bob 1.6s ease-in-out infinite;
+  content: none;
 }
 
-@keyframes gs-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(4px);
-  }
+.gs-app[data-theme='night'] .gs-next {
+  display: none;
 }
 
+/* 菜单不包壳：一条通栏，左三右一。DOM 顺序是 auto / log / save / config，
+ * 用 order 把 auto 排到最后、再 margin-left:auto 顶到右端，不动 build() 的 DOM。 */
 .gs-app[data-theme='night'] .gs-toolbar {
   top: 26px;
   bottom: auto;
+  left: 40px;
   right: 40px;
   gap: 18px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: rgba(8, 8, 14, 0.42);
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.gs-app[data-theme='night'] .gs-tool[data-key='auto'] {
+  order: 2;
+  margin-left: auto;
 }
 
 .gs-app[data-theme='night'] .gs-tool {
@@ -1345,22 +1380,6 @@
   border-color: var(--gs-accent);
   background: color-mix(in srgb, var(--gs-accent) 22%, #0b0a14);
   animation: none;
-}
-
-.gs-app[data-theme='night'] .gs-next {
-  display: block;
-  position: absolute;
-  right: 96px;
-  bottom: 58px;
-  font-size: 13px;
-  color: var(--gs-accent);
-  opacity: 0;
-  transition: opacity 200ms ease;
-  animation: gs-bob 1.6s ease-in-out infinite;
-}
-
-.gs-app[data-theme='night'] .gs-text.gs-done::after {
-  content: none;
 }
 
 .gs-app[data-theme='night'] .gs-sheet {

@@ -596,7 +596,7 @@
     this.hideLayers(!!opts.keepOpening)
     this.choices.style.display = 'none'
     this.app.classList.remove('gs-choosing')
-    this.dialog.style.display = 'block'
+    this.dialog.style.display = ''
 
     /* 背景 */
     var bgPath = this.assetPath(frame.bg)
@@ -615,7 +615,9 @@
     if (displayName) {
       this.dialog.dataset.hasName = 'true'
       this.nameText.textContent = displayName
-      this.nameText.style.setProperty('--gs-name-color', (char && char.color) || 'var(--gs-accent)')
+      /* 写在整条名字栏上而不是字上：night 皮肤那根主题色 bar 是 .gs-name::before，
+       * 只有变量落在外层，bar 才跟得上角色自己的颜色 */
+      this.nameBox.style.setProperty('--gs-name-color', (char && char.color) || 'var(--gs-accent)')
     } else {
       this.dialog.dataset.hasName = 'false'
       this.nameText.textContent = ''
@@ -679,13 +681,13 @@
       this.currentBg = prev.bg
       this.swapBackground(this.assetPath(prev.bg), 'cut', true)
       this.applyCast(prev, 'cut', true)
-      this.dialog.style.display = 'block'
+      this.dialog.style.display = ''
       this.textBox.textContent = frame.prompt || ''
       this.textBox.classList.remove('gs-typing', 'gs-done')
     } else {
       this.textBox.textContent = frame.prompt || ''
       this.textBox.classList.remove('gs-typing', 'gs-done')
-      this.dialog.style.display = frame.prompt ? 'block' : 'none'
+      this.dialog.style.display = frame.prompt ? '' : 'none'
     }
 
     clear(this.choices)
