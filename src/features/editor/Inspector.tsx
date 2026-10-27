@@ -56,6 +56,36 @@ const SLOT_LABELS: Array<{ slot: Slot; labelKey: MessageKey }> = [
   { slot: 'right', labelKey: 'inspector.cast.slot.right' },
 ]
 
+/**
+ * 心理活动的图标：虚线气泡 + 三颗点。
+ *
+ * 气泡是「话」的通用符号，描边改成虚线就变成「没有说出口的话」，
+ * 里面三颗点补足「欲言又止」的语气——比画一颗大脑更好读，也不会跟
+ * 语音 / AI 之类的图标撞含义。虚线周期取 3:3，缩到 16px 仍是清楚的断续。
+ */
+function InnerVoiceIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path
+        strokeDasharray="3 3"
+        d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+      />
+      <circle cx="8.5" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="10" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 export function Inspector() {
   const { frame } = useEditor()
   const { t } = useI18n()
@@ -134,6 +164,14 @@ function LineEditor({ frame }: { frame: LineFrame }) {
   const { t } = useI18n()
   const char = project.characters.find((c) => c.id === frame.speaker.characterId) ?? null
   const speakerMode = char ? 'char' : frame.speaker.name ? 'custom' : 'narration'
+  /*
+   * 心理活动分两种台光，判据就是「有没有明确的角色归因」：
+   * 归因到人 → 场上某个人的内心，只亮他；归因为空 → 第一人称的「我」，全场压暗。
+   * 这里提前把语义讲给作者听，免得开关打开后要靠猜才知道画面为什么变了。
+   */
+  const innerVoiceHint = frame.speaker.characterId
+    ? t('inspector.line.innerVoiceCharHint')
+    : t('inspector.line.innerVoiceNarrationHint')
 
   /**
    * 改摆放要整体替换 cast，但仍以当前帧为底，
@@ -188,7 +226,26 @@ function LineEditor({ frame }: { frame: LineFrame }) {
                 className="w-[104px]"
               />
             ) : null}
+            <Button
+              variant={frame.innerVoice ? 'star' : 'ghost'}
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              aria-pressed={frame.innerVoice}
+              title={
+                frame.innerVoice
+                  ? `${t('inspector.line.innerVoiceOn')} · ${innerVoiceHint}`
+                  : t('inspector.line.innerVoice')
+              }
+              onClick={() => patchFrame(frame.id, { innerVoice: !frame.innerVoice })}
+            >
+              <InnerVoiceIcon className="h-4 w-4" />
+            </Button>
           </div>
+          {frame.innerVoice ? (
+            <p className="text-[10px] leading-snug text-star/80">
+              {t('inspector.line.innerVoiceOn')} · {innerVoiceHint}
+            </p>
+          ) : null}
 
           <div>
             <Textarea

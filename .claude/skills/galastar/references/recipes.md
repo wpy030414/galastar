@@ -108,6 +108,30 @@
 - 换表情只改 `expression`，但整个 `cast` 仍要完整写出。
 - 想让某人退场：把对应槽位写成 `null`。
 
+### 心理活动：名牌消失，亮暗看归因
+
+`innerVoice: true` 表示这句话是想法而不是声音，播放器会隐掉说话人名牌。台光不要再加字段，由 `speaker.characterId` 决定：
+
+```jsonc
+// 场上某个人的内心：名牌消失，只亮她自己
+{ "id": "line-iso-1", "type": "line",
+  "speaker": { "characterId": "char_a", "name": "A" }, "innerVoice": true,
+  "text": "……他大概还不知道。", "bg": "a_bg_hall", "bgm": null, "sfx": null, "voice": null,
+  "cast": { "left": { "characterId": "char_a", "expression": "normal", "transform": { "scale": 100, "offsetX": 0, "offsetY": 0 } }, "center": null, "right": null },
+  "transition": "cut", "shake": false }
+
+// 第一人称「我」在想：没有角色归因，全场立绘一起压暗
+{ "id": "line-iso-2", "type": "line",
+  "speaker": { "characterId": null, "name": "" }, "innerVoice": true,
+  "text": "我大概永远不会说出口。", "bg": "a_bg_hall", "bgm": null, "sfx": null, "voice": null,
+  "cast": { "left": { "characterId": "char_a", "expression": "normal", "transform": { "scale": 100, "offsetX": 0, "offsetY": 0 } }, "center": null, "right": null },
+  "transition": "cut", "shake": false }
+```
+
+- 字段可省略，缺省等价于 `false`；旧工程不用改。
+- 归因不会因为隐掉名牌而丢失：回看记录里仍然记着这句归谁。
+- 想让「我」的独白仍然亮着某个人，就把 `characterId` 填上——语义会变成「那个人的内心」，不是「我」。
+
 ---
 
 ## 6. 标题界面

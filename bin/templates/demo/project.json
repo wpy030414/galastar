@@ -34,6 +34,7 @@
             "characterId": "char_linglan",
             "name": "铃兰"
           },
+          "innerVoice": false,
           "text": "爸爸，请入座吧。灯暗了哦——大幕拉开之前，请收好手机。",
           "bg": "a_bg_worldend",
           "bgm": null,
@@ -62,6 +63,7 @@
             "characterId": "char_linglan",
             "name": "铃兰"
           },
+          "innerVoice": false,
           "text": "……不过，今晚的剧本，还没有写完呢。",
           "bg": "a_bg_worldend",
           "bgm": null,
@@ -119,6 +121,7 @@
             "characterId": "char_linglan",
             "name": "铃兰"
           },
+          "innerVoice": false,
           "text": "……等价交换。爸爸的陪伴，我收下了。",
           "bg": "a_bg_dawn",
           "bgm": null,
@@ -161,6 +164,7 @@
             "characterId": null,
             "name": ""
           },
+          "innerVoice": false,
           "text": "门在身后合上。舞台的灯，还亮着。",
           "bg": "a_bg_dawn",
           "bgm": null,

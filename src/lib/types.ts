@@ -93,6 +93,13 @@ export interface LineFrame {
   id: string
   type: 'line'
   speaker: Speaker
+  /**
+   * 心理活动：这句是「听到想法」而不是「听到声音」。
+   * 开启后不显示说话人名牌，立绘由播放器自己判亮暗——
+   * 有明确角色归因（characterId）就是场上某个人的内心，只亮他一个；
+   * 归因是空的（旁白位选自定义名 / 无名）就是第一人称的「我」，全场压暗。
+   */
+  innerVoice: boolean
   text: string
   bg: string | null
   bgm: string | null

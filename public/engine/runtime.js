@@ -612,7 +612,11 @@
     var speaker = frame.speaker || { characterId: null, name: '' }
     var char = speaker.characterId && this.payload.characters[speaker.characterId]
     var displayName = char ? char.name : speaker.name || ''
-    if (displayName) {
+    /*
+     * 心理活动：名字牌不上台。归因没有丢，只是不写出来——
+     * 立绘的亮暗（见 applyCast）与回看记录仍然按说话人走。
+     */
+    if (displayName && !frame.innerVoice) {
       this.dialog.dataset.hasName = 'true'
       this.nameText.textContent = displayName
       /* 写在整条名字栏上而不是字上：night 皮肤那根主题色 bar 是 .gs-name::before，
@@ -761,6 +765,12 @@
   Stage.prototype.applyCast = function (frame, transition, instant) {
     var self = this
     var speakerId = frame.speaker && frame.speaker.characterId
+    /*
+     * 心理活动的两种台光：
+     *  · 归因到某个角色 —— 是他一个人的内心，照旧只亮他（名字牌不出现而已）
+     *  · 归因是空的 —— 第一人称的「我」在想，台上没有人开口，全体压暗
+     */
+    var allDim = !!frame.innerVoice && !speakerId
     SLOTS.forEach(function (slot) {
       var target = frame.cast ? frame.cast[slot] : null
       var node = self.slots[slot]
@@ -792,9 +802,9 @@
       node.img.style.transition = instant || changed ? 'none' : ''
       node.wrap.style.opacity = '1'
       node.wrap.classList.add('gs-slot-on')
-      var speaking = speakerId && target.characterId === speakerId
+      var speaking = !allDim && speakerId && target.characterId === speakerId
       node.wrap.classList.toggle('gs-slot-speaker', !!speaking)
-      node.wrap.classList.toggle('gs-slot-dim', !speaking && !!speakerId)
+      node.wrap.classList.toggle('gs-slot-dim', !speaking && (allDim || !!speakerId))
       node.wrap.dataset.char = target.characterId
       if (instant) node.wrap.style.transition = 'none'
       else node.wrap.style.transition = ''

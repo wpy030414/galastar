@@ -127,6 +127,10 @@ export const editorZh = {
   'inspector.line.textPlaceholder': '在这里写台词。支持换行，逐字显示时长由播放器设置决定。',
   'inspector.line.newLineHint': 'Ctrl / ⌘ + Enter 新建下一句',
   'inspector.line.charCount': '{n} 字',
+  'inspector.line.innerVoice': '心理活动',
+  'inspector.line.innerVoiceOn': '不显示说话人名牌',
+  'inspector.line.innerVoiceCharHint': '立绘只亮心里说话的那个人',
+  'inspector.line.innerVoiceNarrationHint': '没有人开口，所有立绘一起压暗',
 
   'inspector.stage.background': '背景',
   'inspector.stage.transition': '进场转场',
@@ -314,6 +318,11 @@ export const editorEn: Record<keyof typeof editorZh, Message> = {
     'Write the line here. Line breaks are kept; typewriter speed comes from the player settings.',
   'inspector.line.newLineHint': 'Ctrl / ⌘ + Enter for the next line',
   'inspector.line.charCount': { one: '{n} character', other: '{n} characters' },
+  'inspector.line.innerVoice': 'Inner voice',
+  'inspector.line.innerVoiceOn': 'This is a thought, not a spoken line — no nameplate.',
+  'inspector.line.innerVoiceCharHint': 'One of them is thinking; only their sprite stays lit.',
+  'inspector.line.innerVoiceNarrationHint':
+    'The first-person “I” is thinking; nobody spoke, so every sprite dims.',
 
   'inspector.stage.background': 'Background',
   'inspector.stage.transition': 'Transition in',

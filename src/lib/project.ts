@@ -94,6 +94,8 @@ export function createLineFrame(prev?: LineFrame | null): LineFrame {
     id: uid('f'),
     type: 'line',
     speaker: { characterId: null, name: '' },
+    // 与 speaker 同域，属于这一句而不是这一场：新建帧默认关，不继承上一帧
+    innerVoice: false,
     text: '',
     bg: prev?.bg ?? null,
     bgm: prev?.bgm ?? null,

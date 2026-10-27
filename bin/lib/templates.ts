@@ -52,6 +52,7 @@ function blankProject(name: string, author: string, locale: Locale): Project {
             id: 'line-1',
             type: 'line',
             speaker: { characterId: null, name: '' },
+            innerVoice: false,
             text: locale === 'en' ? 'The curtain rises.' : '大幕拉开了。',
             bg: null,
             bgm: null,

@@ -30,10 +30,14 @@ const TXT = {
   c1: '第三幕的收尾。',
 }
 
-const line = (id, text) => ({
+/* 立绘摆放的默认值：帧上的 transform 必须给全，播放器会按范围裁剪 */
+const TR = { scale: 100, offsetX: 0, offsetY: 0 }
+
+const line = (id, text, extra) => ({
   id,
   type: 'line',
   speaker: { characterId: null, name: '' },
+  innerVoice: false,
   text,
   bg: null,
   bgm: null,
@@ -42,6 +46,7 @@ const line = (id, text) => ({
   cast: { left: null, center: null, right: null },
   transition: 'fade',
   shake: false,
+  ...extra,
 })
 
 const end = (id, title, next) => ({
@@ -52,6 +57,13 @@ const end = (id, title, next) => ({
   subtitle: next ? '—— 幕间 ——' : '灯亮了。',
   next,
 })
+
+/*
+ * 立绘用的 1x1 PNG 自己画：播放器只看 img 的 src 属性，不解码像素，
+ * 所以这一小段定长 base64 就够把「台上有没有人」这件事跑通。
+ */
+const BLANK_PNG =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 
 const DATA = {
   format: 'galastar/2',
@@ -67,9 +79,15 @@ const DATA = {
     stage: { width: 1280, height: 720 },
     title: { enabled: false, subtitle: '', background: null },
   },
-  characters: {},
+  characters: {
+    char_a: { name: '角色A', color: '#ff88cc', sprites: { normal: 'a_sp_a' } },
+    char_b: { name: '角色B', color: '#88ccff', sprites: { normal: 'a_sp_b' } },
+  },
   flags: [],
-  assets: {},
+  assets: {
+    a_sp_a: { kind: 'sprite', path: BLANK_PNG, name: 'A.png' },
+    a_sp_b: { kind: 'sprite', path: BLANK_PNG, name: 'B.png' },
+  },
   scenes: [
     {
       id: 'scene-a',
@@ -85,6 +103,41 @@ const DATA = {
       id: 'scene-c',
       name: '第三幕 · 测试',
       frames: [line('c1', TXT.c1), end('ec', '结局 · 测试', null)],
+    },
+    /*
+     * 心理活动：台上站两个人，用三种归因把两条规则分开验。
+     * iv-a 有名字牌当对照，免得「名牌没出现」是因为根本没配名字。
+     */
+    {
+      id: 'scene-iv',
+      name: '心理活动 · 测试',
+      frames: [
+        line('iv-a', '台上有人开口。', {
+          speaker: { characterId: 'char_a', name: '角色A' },
+          cast: {
+            left: { characterId: 'char_a', expression: 'normal', transform: { ...TR } },
+            center: null,
+            right: { characterId: 'char_b', expression: 'normal', transform: { ...TR } },
+          },
+        }),
+        line('iv-b', '这是角色B的内心。', {
+          innerVoice: true,
+          speaker: { characterId: 'char_b', name: '角色B' },
+          cast: {
+            left: { characterId: 'char_a', expression: 'normal', transform: { ...TR } },
+            center: null,
+            right: { characterId: 'char_b', expression: 'normal', transform: { ...TR } },
+          },
+        }),
+        line('iv-c', '这是「我」在想。', {
+          innerVoice: true,
+          cast: {
+            left: { characterId: 'char_a', expression: 'normal', transform: { ...TR } },
+            center: null,
+            right: { characterId: 'char_b', expression: 'normal', transform: { ...TR } },
+          },
+        }),
+      ],
     },
   ],
 }
@@ -262,7 +315,66 @@ const DRIVER = String.raw`
       getComputedStyle(q('.gs-title')).display,
     )
 
-    finish({ ok: results.every(function (r) { return r.ok }), checks: results })
+    /* ---------------- 心理活动 ---------------- */
+    function slotState(cls) {
+      var node = q('.gs-slot-' + cls)
+      return {
+        on: node.classList.contains('gs-slot-on'),
+        lit: node.classList.contains('gs-slot-speaker'),
+        dim: node.classList.contains('gs-slot-dim'),
+      }
+    }
+
+    stage.startFrom('scene-iv', 0)
+    await sleep(360)
+    check(
+      '普通台词仍然显示名牌',
+      q('.gs-dialog').dataset.hasName === 'true' && visible(q('.gs-name')),
+      q('.gs-dialog').dataset.hasName + ' / ' + q('.gs-name-text').textContent,
+    )
+    var ivA = slotState('left')
+    check(
+      '普通台词只亮说话人',
+      ivA.on && ivA.lit && !ivA.dim && !slotState('right').lit && slotState('right').dim,
+      JSON.stringify([ivA, slotState('right')]),
+    )
+
+    click(q('.gs-dialog'))
+    await sleep(360)
+    check(
+      '角色心理活动不显示名牌',
+      q('.gs-dialog').dataset.hasName === 'false' && !visible(q('.gs-name')),
+      q('.gs-dialog').dataset.hasName,
+    )
+    var ivB = slotState('right')
+    check(
+      '角色心理活动仍然只亮他自己',
+      ivB.on && ivB.lit && !ivB.dim && !slotState('left').lit && slotState('left').dim,
+      JSON.stringify([slotState('left'), ivB]),
+    )
+
+    click(q('.gs-dialog'))
+    await sleep(360)
+    check(
+      '旁白式心理活动也不显示名牌',
+      q('.gs-dialog').dataset.hasName === 'false' && !visible(q('.gs-name')),
+      q('.gs-dialog').dataset.hasName,
+    )
+    var ivCLeft = slotState('left')
+    var ivCRight = slotState('right')
+    check(
+      '旁白式心理活动压暗全部立绘',
+      ivCLeft.on && ivCRight.on && !ivCLeft.lit && !ivCRight.lit && ivCLeft.dim && ivCRight.dim,
+      JSON.stringify([ivCLeft, ivCRight]),
+    )
+    var ivNames = stage.view.history.map(function (item) { return item.name })
+    check(
+      '心理活动的归因仍写进记录',
+      ivNames.join('|') === '角色A|角色B|',
+      ivNames.join('|'),
+    )
+
+finish({ ok: results.every(function (r) { return r.ok }), checks: results })
   }
 
   run().catch(function (error) {

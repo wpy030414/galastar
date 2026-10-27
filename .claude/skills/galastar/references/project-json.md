@@ -89,6 +89,7 @@ my-story/
 | `id`         | string                                               | —               | 全局唯一                                                        |
 | `type`       | `"line"`                                             | —               |                                                                 |
 | `speaker`    | `{ characterId, name }`                              | `{null, ""}`    | `characterId` 命中角色时显示角色名；否则用 `name`；都为空即旁白 |
+| `innerVoice` | boolean                                              | false           | 心理活动：不显示名牌。有 `characterId` 只亮那人，没有则全场压暗 |
 | `text`       | string                                               | `""`            | 台词正文，支持换行                                              |
 | `bg`         | string \| null                                       | 上一句的 bg     | 背景素材 id                                                     |
 | `bgm`        | string \| null                                       | 上一句的 bgm    | 音乐素材 id                                                     |
